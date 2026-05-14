@@ -300,10 +300,11 @@ export default function HomeCS() {
     }
   }, [])
 
-  if (!progress) {
-    navigate('/onboarding')
-    return null
-  }
+  useEffect(() => {
+    if (!progress) navigate('/onboarding', { replace: true })
+  }, [progress, navigate])
+
+  if (!progress) return null
 
   const subject = progress.subject
   const accent = SUBJECT_ACCENT[subject] ?? '#3b82f6'
