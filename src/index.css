@@ -1,0 +1,290 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-base: #08080f;
+  --color-bg-card: #111118;
+  --color-bg-glass: rgba(255, 255, 255, 0.04);
+  --color-border-glass: rgba(255, 255, 255, 0.08);
+
+  --color-violet: #7c3aed;
+  --color-violet-light: #a855f7;
+  --color-blue: #3b82f6;
+  --color-blue-light: #60a5fa;
+  --color-indigo: #6366f1;
+
+  --color-text-primary: #f0f0ff;
+  --color-text-secondary: #9898b8;
+  --color-text-muted: #5a5a7a;
+
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  --radius-card: 20px;
+  --radius-btn: 14px;
+
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+  --shadow-glow-violet: 0 0 40px rgba(124, 58, 237, 0.25);
+  --shadow-glow-blue: 0 0 40px rgba(59, 130, 246, 0.2);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #04040a;
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: var(--color-bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--color-border-glass);
+  box-shadow: var(--shadow-glass);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-glass);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #a855f7, #60a5fa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gradient backgrounds */
+.gradient-violet {
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+}
+
+.gradient-blue {
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+}
+
+/* Ambient background blobs (inside phone screen) */
+.ambient-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ambient-bg::before {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.14) 0%, transparent 70%);
+  top: -60px;
+  right: -60px;
+}
+
+.ambient-bg::after {
+  content: '';
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.09) 0%, transparent 70%);
+  bottom: 80px;
+  left: -60px;
+}
+
+/* Smooth scrolling inside phone */
+* {
+  scroll-behavior: smooth;
+}
+
+/* Smooth page transitions */
+.page-enter {
+  animation: pageIn 0.25s ease-out forwards;
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 0px;
+}
+
+/* ── Premium animation keyframes ───────────────────────────────────────────── */
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.88); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.6); }
+  70%  { transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 18px rgba(124,58,237,0.25); }
+  50%       { box-shadow: 0 0 32px rgba(124,58,237,0.5), 0 0 60px rgba(124,58,237,0.2); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes barGrow {
+  from { width: 0 !important; }
+}
+
+@keyframes ringPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.06); opacity: 0.85; }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: scale(1); }
+  40%       { transform: scale(0.94); }
+  70%       { transform: scale(1.04); }
+}
+
+@keyframes correctFlash {
+  0%   { background: rgba(16,185,129,0.12); }
+  50%  { background: rgba(16,185,129,0.28); }
+  100% { background: rgba(16,185,129,0.12); }
+}
+
+/* Staggered list children */
+.stagger > *:nth-child(1)  { animation: slideUp 0.28s ease-out 0.04s both; }
+.stagger > *:nth-child(2)  { animation: slideUp 0.28s ease-out 0.09s both; }
+.stagger > *:nth-child(3)  { animation: slideUp 0.28s ease-out 0.14s both; }
+.stagger > *:nth-child(4)  { animation: slideUp 0.28s ease-out 0.18s both; }
+.stagger > *:nth-child(5)  { animation: slideUp 0.28s ease-out 0.22s both; }
+.stagger > *:nth-child(6)  { animation: slideUp 0.28s ease-out 0.26s both; }
+.stagger > *:nth-child(7)  { animation: slideUp 0.28s ease-out 0.29s both; }
+.stagger > *:nth-child(8)  { animation: slideUp 0.28s ease-out 0.32s both; }
+.stagger > *:nth-child(9)  { animation: slideUp 0.28s ease-out 0.34s both; }
+.stagger > *:nth-child(10) { animation: slideUp 0.28s ease-out 0.36s both; }
+
+/* Scale feedback on tap/press */
+.tap-scale {
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+.tap-scale:active {
+  transform: scale(0.95) !important;
+}
+
+/* Available level glow pulse */
+.glow-available {
+  animation: pulseGlow 2.8s ease-in-out infinite;
+}
+
+/* Animate-in on mount */
+.anim-pop-in {
+  animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.anim-scale-in {
+  animation: scaleIn 0.22s ease-out forwards;
+}
+.anim-slide-up {
+  animation: slideUp 0.28s ease-out forwards;
+}
+
+/* Animated bar (used in Progress) */
+.bar-anim {
+  animation: barGrow 0.6s cubic-bezier(0.34, 1.2, 0.64, 1) backwards;
+}
+
+/* Correct answer flash */
+.flash-correct {
+  animation: correctFlash 0.5s ease-in-out;
+}
+
+/* Button styles */
+.btn-primary {
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: white;
+  border-radius: var(--radius-btn);
+  padding: 14px 24px;
+  font-weight: 600;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.35);
+  width: 100%;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px rgba(124, 58, 237, 0.45);
+}
+
+.btn-primary:active {
+  transform: scale(0.97) translateY(0);
+}
+
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-btn);
+  padding: 14px 24px;
+  font-weight: 500;
+  font-size: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--color-text-primary);
+}

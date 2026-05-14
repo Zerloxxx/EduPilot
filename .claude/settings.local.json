@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(if \\(-not $?\\) { \"Directory not found or empty\" })",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "PowerShell(cd \"C:\\\\Users\\\\sunne\\\\OneDrive\\\\Desktop\\\\EduPilot\"; Get-ChildItem -Recurse -File | Where-Object { $_.FullName -notmatch 'node_modules' } | Select-Object -ExpandProperty FullName | Sort-Object)",
+      "Bash(npx vite *)",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "Bash(npx tsc *)",
+      "Bash(node --input-type=module)",
+      "mcp__Claude_Preview__preview_start"
+    ]
+  }
+}
