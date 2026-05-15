@@ -30,7 +30,7 @@ export default function ReviewScreen() {
   if (queue.length === 0 || idx >= queue.length) {
     return (
       <div style={{
-        minHeight: '100%', background: '#0d0f14', color: '#f0f0ff',
+        minHeight: '100%', background: 'var(--bg)', color: 'var(--text-1)',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', padding: '32px 24px', textAlign: 'center',
       }}>
@@ -45,7 +45,7 @@ export default function ReviewScreen() {
         <div style={{ fontSize: '24px', fontWeight: '900', marginBottom: '10px' }}>
           Повторение пройдено!
         </div>
-        <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.42)', lineHeight: 1.6, marginBottom: '32px', maxWidth: '280px' }}>
+        <div style={{ fontSize: '14px', color: 'var(--text-2)', lineHeight: 1.6, marginBottom: '32px', maxWidth: '280px' }}>
           Ты разобрал {doneCount} {plural(doneCount, 'задание', 'задания', 'заданий')}. Следующее повторение — завтра.
         </div>
         <button
@@ -90,7 +90,7 @@ export default function ReviewScreen() {
   const progress_ = idx / total
 
   return (
-    <div style={{ minHeight: '100%', background: '#0d0f14', color: '#f0f0ff', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100%', background: 'var(--bg)', color: 'var(--text-1)', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div style={{ padding: '12px 18px 10px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -98,8 +98,8 @@ export default function ReviewScreen() {
             onClick={() => navigate('/home')}
             style={{
               width: '36px', height: '36px', borderRadius: '12px',
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-              color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '18px',
+              background: 'var(--bg-card)', border: '1px solid var(--border)',
+              color: 'var(--text-2)', cursor: 'pointer', fontSize: '18px',
             }}
           >←</button>
           <div style={{ flex: 1 }}>
@@ -121,7 +121,7 @@ export default function ReviewScreen() {
 
         {/* Progress bar */}
         <div style={{
-          height: '4px', borderRadius: '4px', background: 'rgba(255,255,255,0.07)',
+          height: '4px', borderRadius: '4px', background: 'var(--border)',
           marginTop: '12px', overflow: 'hidden',
         }}>
           <div style={{
@@ -148,10 +148,10 @@ export default function ReviewScreen() {
         {/* Task text */}
         <div style={{
           borderRadius: '20px', padding: '18px',
-          background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--bg-card)', border: '1px solid var(--border)',
           marginBottom: '12px',
         }}>
-          <div style={{ fontSize: '15px', lineHeight: 1.65, color: '#f0f0ff', fontWeight: '600' }}>
+          <div style={{ fontSize: '15px', lineHeight: 1.65, color: 'var(--text-1)', fontWeight: '600' }}>
             {task.text}
           </div>
         </div>
@@ -176,15 +176,15 @@ export default function ReviewScreen() {
                       ? 'rgba(239,68,68,0.08)'
                       : active
                         ? `rgba(${hexToRgb(ACCENT)},0.1)`
-                        : 'rgba(255,255,255,0.035)',
+                        : 'var(--bg-card)',
                   border: showCorrect
                     ? '1.5px solid rgba(16,185,129,0.4)'
                     : wrong
                       ? '1.5px solid rgba(239,68,68,0.35)'
                       : active
                         ? `1.5px solid rgba(${hexToRgb(ACCENT)},0.55)`
-                        : '1px solid rgba(255,255,255,0.08)',
-                  color: showCorrect ? '#10b981' : wrong ? '#f87171' : active ? ACCENT : 'rgba(255,255,255,0.72)',
+                        : '1px solid var(--border)',
+                  color: showCorrect ? '#10b981' : wrong ? '#f87171' : active ? ACCENT : 'var(--text-1)',
                   textAlign: 'left', cursor: submitted ? 'default' : 'pointer',
                   fontSize: '14px', fontWeight: '650',
                   transition: 'all 0.15s ease',
@@ -198,7 +198,7 @@ export default function ReviewScreen() {
                       ? 'rgba(239,68,68,0.14)'
                       : active
                         ? `rgba(${hexToRgb(ACCENT)},0.18)`
-                        : 'rgba(255,255,255,0.06)',
+                        : 'var(--bg-card-2)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '11px', fontWeight: '900', flexShrink: 0,
                 }}>
@@ -215,7 +215,7 @@ export default function ReviewScreen() {
           <div style={{
             padding: '13px 15px', borderRadius: '16px',
             background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.22)',
-            color: 'rgba(255,255,255,0.7)', fontSize: '13px', lineHeight: 1.5, marginBottom: '12px',
+            color: 'var(--text-1)', fontSize: '13px', lineHeight: 1.5, marginBottom: '12px',
           }}>
             <strong style={{ color: '#10b981' }}>Верно.</strong> {task.explanation?.tip}
           </div>
@@ -224,13 +224,13 @@ export default function ReviewScreen() {
         {submittedWrong && (
           <div style={{
             borderRadius: '18px', border: '1px solid rgba(245,158,11,0.28)',
-            background: 'rgba(255,255,255,0.035)', overflow: 'hidden', marginBottom: '12px',
+            background: 'var(--bg-card)', overflow: 'hidden', marginBottom: '12px',
           }}>
             <div style={{ padding: '12px 14px', background: 'rgba(245,158,11,0.1)' }}>
               <div style={{ fontSize: '13px', fontWeight: '900', color: ACCENT }}>Разбор ошибки</div>
             </div>
             <div style={{ padding: '13px 14px' }}>
-              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.64)', lineHeight: 1.55, marginBottom: '8px' }}>
+              <div style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: 1.55, marginBottom: '8px' }}>
                 {task.explanation?.error}
               </div>
               {task.explanation?.steps?.slice(0, 2).map((step, i) => (
@@ -241,7 +241,7 @@ export default function ReviewScreen() {
                     fontSize: '10px', fontWeight: '900',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                   }}>{i + 1}</span>
-                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>{step}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-2)', lineHeight: 1.5 }}>{step}</span>
                 </div>
               ))}
             </div>

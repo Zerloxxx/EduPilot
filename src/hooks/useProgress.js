@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { getSections } from '../data/curriculum'
+import { getSections, getOgeGrade, getOgeNextGrade } from '../data/curriculum'
 
 const STORAGE_KEY = 'edupilot_progress_v4'
 
@@ -8,8 +8,8 @@ function getTodayStr() {
 }
 
 // ─── Per-subject data structure ──────────────────────────────────────────────
-function getSubjectInitialData(subject) {
-  const sections = getSections(subject)
+function getSubjectInitialData(subject, exam = 'ege') {
+  const sections = getSections(subject, exam)
   const unlockedLevels = {}
   const completedLevels = {}
   sections.forEach(section => {
@@ -44,7 +44,7 @@ function getInitialState(exam, subject) {
     nickname: 'Ученик',
     avatar: '🎓',
     subjects: {
-      [subject]: getSubjectInitialData(subject),
+      [subject]: getSubjectInitialData(subject, exam),
     },
   }
 }
@@ -52,7 +52,7 @@ function getInitialState(exam, subject) {
 // ─── Computed "progress" view — same shape as before so all components work ──
 function buildProgressView(state) {
   if (!state) return null
-  const subjectData = state.subjects[state.currentSubject] ?? getSubjectInitialData(state.currentSubject)
+  const subjectData = state.subjects[state.currentSubject] ?? getSubjectInitialData(state.currentSubject, state.exam ?? 'ege')
   return {
     exam: state.exam,
     subject: state.currentSubject,
@@ -66,7 +66,11 @@ function buildProgressView(state) {
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : null
+    if (!raw) return null
+    const state = JSON.parse(raw)
+    // Миграция: старые данные без поля exam → по умолчанию 'ege'
+    if (state && !state.exam) state.exam = 'ege'
+    return state
   } catch {
     return null
   }
@@ -109,8 +113,19 @@ export function useProgress() {
       if (subjectId === prev.currentSubject) return prev
 
       // Create subject entry if first visit to this subject
+      const exam = prev.exam ?? 'ege'
       const existingData = prev.subjects[subjectId]
-      const subjectData = existingData ?? getSubjectInitialData(subjectId)
+
+      // Validate: stored data must have keys matching current exam's sections.
+      // If it was saved with wrong exam's IDs (e.g. EGE keys in OGE mode), reset it.
+      const isCompatible = (() => {
+        if (!existingData) return false
+        const expectedSections = getSections(subjectId, exam)
+        const storedKeys = Object.keys(existingData.unlockedLevels ?? {})
+        return expectedSections.some(s => storedKeys.includes(s.id))
+      })()
+
+      const subjectData = isCompatible ? existingData : getSubjectInitialData(subjectId, exam)
 
       return {
         ...prev,
@@ -129,9 +144,9 @@ export function useProgress() {
       if (!prev) return prev
 
       const subject = prev.currentSubject
-      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject)
+      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject, prev.exam ?? 'ege')
 
-      const sections = getSections(subject)
+      const sections = getSections(subject, prev.exam)
       const sectionIdx = sections.findIndex(s => s.id === sectionId)
       const section = sections[sectionIdx]
       const totalLevels = section?.levels?.length ?? 6
@@ -186,7 +201,7 @@ export function useProgress() {
     update(prev => {
       if (!prev) return prev
       const subject = prev.currentSubject
-      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject)
+      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject, prev.exam ?? 'ege')
       if (subjectData.solvedTasks.includes(taskId)) return prev
       return {
         ...prev,
@@ -203,7 +218,7 @@ export function useProgress() {
     update(prev => {
       if (!prev) return prev
       const subject = prev.currentSubject
-      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject)
+      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject, prev.exam ?? 'ege')
       const prevBest = subjectData.diagnosticBestScore ?? -1
       const isBest   = score > prevBest
       return {
@@ -230,7 +245,7 @@ export function useProgress() {
     update(prev => {
       if (!prev) return prev
       const subject = prev.currentSubject
-      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject)
+      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject, prev.exam ?? 'ege')
       return {
         ...prev,
         subjects: {
@@ -246,7 +261,7 @@ export function useProgress() {
     update(prev => {
       if (!prev) return prev
       const subject = prev.currentSubject
-      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject)
+      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject, prev.exam ?? 'ege')
       const queue = subjectData.reviewQueue ?? []
       if (queue.find(e => e.taskId === taskId)) return prev // already scheduled
       const DAY = 24 * 60 * 60 * 1000
@@ -273,7 +288,7 @@ export function useProgress() {
     update(prev => {
       if (!prev) return prev
       const subject = prev.currentSubject
-      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject)
+      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject, prev.exam ?? 'ege')
       const queue = subjectData.reviewQueue ?? []
       const DAY = 24 * 60 * 60 * 1000
       const INTERVALS = [0, 1, 3, 7] // 0=сегодня → 1 → 3 → 7 → выучено
@@ -303,7 +318,7 @@ export function useProgress() {
     update(prev => {
       if (!prev) return prev
       const subject = prev.currentSubject
-      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject)
+      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject, prev.exam ?? 'ege')
       const current = subjectData.energy ?? 30
       if (current <= 0) return prev
       const newEnergy = current - 1
@@ -326,7 +341,7 @@ export function useProgress() {
     update(prev => {
       if (!prev) return prev
       const subject = prev.currentSubject
-      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject)
+      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject, prev.exam ?? 'ege')
       return {
         ...prev,
         subjects: {
@@ -388,7 +403,7 @@ export function useProgress() {
     if (!state) return 0
     const subjectData = state.subjects[state.currentSubject]
     if (!subjectData) return 0
-    const sections = getSections(state.currentSubject)
+    const sections = getSections(state.currentSubject, state.exam)
     const totalLevels = sections.length * 6
     const completedTotal = sections.reduce((sum, s) => {
       return sum + (subjectData.completedLevels[s.id]?.length ?? 0)
@@ -436,6 +451,24 @@ export function useProgress() {
     const d = state.subjects[state.currentSubject]
     const queue = d?.reviewQueue ?? []
     return queue.filter(e => e.nextReviewAt <= Date.now())
+  })()
+
+  // ── OGE: earned points + predicted grade ────────────────────────────────
+  const ogeData = (() => {
+    if (!state || state.exam !== 'oge') return null
+    const subject = state.currentSubject
+    const subjectData = state.subjects[subject]
+    const sections = getSections(subject, 'oge')
+    // Балл за секцию зарабатывается когда пройден хотя бы 1 практический уровень
+    const earnedPoints = sections.reduce((sum, section) => {
+      const completed = subjectData?.completedLevels[section.id] ?? []
+      const hasPractice = completed.some(idx => idx > 0)
+      return hasPractice ? sum + (section.pointValue ?? 1) : sum
+    }, 0)
+    const maxPoints = sections.reduce((sum, s) => sum + (s.pointValue ?? 1), 0)
+    const grade = getOgeGrade(earnedPoints, subject)
+    const nextGrade = getOgeNextGrade(earnedPoints, subject)
+    return { earnedPoints, maxPoints, grade, nextGrade }
   })()
 
   // ── Global stats across all subjects ────────────────────────────────────
@@ -495,6 +528,7 @@ export function useProgress() {
     nickname: state?.nickname ?? 'Ученик',
     avatar: state?.avatar ?? '🎓',
     isInitialized: !!state,
+    ogeData,
   }
 }
 

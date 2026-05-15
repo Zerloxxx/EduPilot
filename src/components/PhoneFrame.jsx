@@ -26,8 +26,9 @@ function StatusBar() {
       flexShrink: 0,
       position: 'relative',
       zIndex: 50,
+      color: 'var(--text-1)',
     }}>
-      <span style={{ fontSize: '15px', fontWeight: '700', color: '#f0f0ff', letterSpacing: '-0.3px' }}>
+      <span style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-1)', letterSpacing: '-0.3px' }}>
         {time}
       </span>
 
@@ -52,27 +53,27 @@ function StatusBar() {
           {[4, 7, 9, 11].map((h, i) => (
             <div key={i} style={{
               width: '3px', height: `${h}px`, borderRadius: '1px',
-              background: i < 3 ? '#f0f0ff' : 'rgba(240,240,255,0.35)',
+              background: i < 3 ? 'var(--text-1)' : 'var(--text-3)',
             }} />
           ))}
         </div>
         {/* WiFi */}
         <svg width="15" height="11" viewBox="0 0 15 11" fill="none">
-          <path d="M7.5 8.5a1.25 1.25 0 100 2.5 1.25 1.25 0 000-2.5z" fill="#f0f0ff"/>
-          <path d="M3.2 5.8C4.5 4.4 5.9 3.7 7.5 3.7s3 .7 4.3 2.1" stroke="#f0f0ff" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
-          <path d="M.6 3C2.7 1 5 0 7.5 0s4.8 1 6.9 3" stroke="#f0f0ff" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
+          <path d="M7.5 8.5a1.25 1.25 0 100 2.5 1.25 1.25 0 000-2.5z" fill="currentColor"/>
+          <path d="M3.2 5.8C4.5 4.4 5.9 3.7 7.5 3.7s3 .7 4.3 2.1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
+          <path d="M.6 3C2.7 1 5 0 7.5 0s4.8 1 6.9 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
         </svg>
         {/* Battery */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1px' }}>
           <div style={{
             width: '24px', height: '12px', borderRadius: '3.5px',
-            border: '1px solid rgba(240,240,255,0.45)',
+            border: '1px solid var(--text-2)',
             padding: '2px 2.5px',
             display: 'flex', alignItems: 'center',
           }}>
-            <div style={{ width: '65%', height: '100%', borderRadius: '1.5px', background: '#f0f0ff' }} />
+            <div style={{ width: '65%', height: '100%', borderRadius: '1.5px', background: 'var(--text-1)' }} />
           </div>
-          <div style={{ width: '2px', height: '5px', borderRadius: '0 1px 1px 0', background: 'rgba(240,240,255,0.35)' }} />
+          <div style={{ width: '2px', height: '5px', borderRadius: '0 1px 1px 0', background: 'var(--text-3)' }} />
         </div>
       </div>
     </div>
@@ -92,7 +93,7 @@ function HomeIndicator() {
         width: '130px',
         height: '5px',
         borderRadius: '3px',
-        background: 'rgba(255,255,255,0.22)',
+        background: 'var(--border-2)',
       }} />
     </div>
   )
@@ -124,7 +125,7 @@ export default function PhoneFrame({ children, bottomNav }) {
   // ─── Mobile: full-screen, no frame ───────────────────────────────────────
   if (isMobile) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#08080f' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--bg)' }}>
         <StatusBar />
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, position: 'relative' }}>
           {children}
@@ -243,7 +244,7 @@ function PhoneShell({ children }) {
         position: 'absolute',
         inset: '2px',
         borderRadius: '53px',
-        background: '#08080f',
+        background: 'var(--bg)',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',

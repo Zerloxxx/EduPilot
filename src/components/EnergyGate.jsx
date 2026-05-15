@@ -25,7 +25,7 @@ export default function EnergyGate({ refillsAt, onRefill, onBack }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 999,
-      background: '#0d0f14',
+      background: 'var(--bg)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '32px 24px',
     }}>
@@ -34,8 +34,8 @@ export default function EnergyGate({ refillsAt, onRefill, onBack }) {
         style={{
           position: 'absolute', top: '16px', left: '16px',
           width: '36px', height: '36px', borderRadius: '12px',
-          background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-          color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '18px',
+          background: 'var(--bg-card)', border: '1px solid var(--border)',
+          color: 'var(--text-2)', cursor: 'pointer', fontSize: '18px',
         }}
       >←</button>
 
@@ -50,11 +50,11 @@ export default function EnergyGate({ refillsAt, onRefill, onBack }) {
         animation: 'pulseGlow 2s ease-in-out infinite',
       }}>⚡</div>
 
-      <div style={{ fontSize: '26px', fontWeight: '900', color: '#f0f0ff', marginBottom: '10px', textAlign: 'center' }}>
+      <div style={{ fontSize: '26px', fontWeight: '900', color: 'var(--text-1)', marginBottom: '10px', textAlign: 'center' }}>
         Энергия закончилась
       </div>
       <div style={{
-        fontSize: '14px', color: 'rgba(255,255,255,0.42)', textAlign: 'center',
+        fontSize: '14px', color: 'var(--text-2)', textAlign: 'center',
         lineHeight: 1.6, marginBottom: '32px', maxWidth: '290px',
       }}>
         30 ⚡ в день — по одной за каждый ответ. Восполнится через 6 часов или прямо сейчас.
@@ -68,7 +68,7 @@ export default function EnergyGate({ refillsAt, onRefill, onBack }) {
           marginBottom: '20px', textAlign: 'center',
         }}>
           <div style={{
-            fontSize: '11px', color: 'rgba(255,255,255,0.38)', marginBottom: '6px',
+            fontSize: '11px', color: 'var(--text-3)', marginBottom: '6px',
             fontWeight: '700', letterSpacing: '0.08em',
           }}>
             ПОПОЛНЕНИЕ ЧЕРЕЗ
@@ -110,7 +110,7 @@ export default function EnergyGate({ refillsAt, onRefill, onBack }) {
       </button>
 
       {!timerDone && (
-        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.22)', textAlign: 'center' }}>
+        <div style={{ fontSize: '12px', color: 'var(--text-3)', textAlign: 'center' }}>
           или подожди бесплатного пополнения
         </div>
       )}

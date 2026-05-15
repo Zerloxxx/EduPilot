@@ -35,16 +35,16 @@ function AvatarPicker({ current, onSelect, onClose }) {
       <div style={{
         position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
         width: '100%', maxWidth: '480px',
-        background: '#141620', borderRadius: '24px 24px 0 0',
-        border: '1px solid rgba(255,255,255,0.1)',
+        background: 'var(--bg)', borderRadius: '24px 24px 0 0',
+        border: '1px solid var(--border)',
         padding: '20px 20px 36px',
         zIndex: 101,
       }}>
         <div style={{
           width: '36px', height: '4px', borderRadius: '2px',
-          background: 'rgba(255,255,255,0.15)', margin: '0 auto 20px',
+          background: 'var(--border-2)', margin: '0 auto 20px',
         }} />
-        <div style={{ fontSize: '15px', fontWeight: '800', color: '#f0f0ff', marginBottom: '16px', textAlign: 'center' }}>
+        <div style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text-1)', marginBottom: '16px', textAlign: 'center' }}>
           Выбери аватар
         </div>
         <div style={{
@@ -59,10 +59,10 @@ function AvatarPicker({ current, onSelect, onClose }) {
                 height: '64px', borderRadius: '18px', fontSize: '28px',
                 background: current === emoji
                   ? 'rgba(124,58,237,0.2)'
-                  : 'rgba(255,255,255,0.04)',
+                  : 'var(--bg-card)',
                 border: current === emoji
                   ? '2px solid rgba(124,58,237,0.7)'
-                  : '1px solid rgba(255,255,255,0.08)',
+                  : '1px solid var(--border)',
                 cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: current === emoji ? '0 4px 16px rgba(124,58,237,0.25)' : 'none',
@@ -89,23 +89,23 @@ function ConfirmModal({ onConfirm, onCancel }) {
         position: 'fixed', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)',
         width: 'calc(100% - 48px)', maxWidth: '340px',
-        background: '#141620', borderRadius: '24px',
-        border: '1px solid rgba(255,255,255,0.1)',
+        background: 'var(--bg)', borderRadius: '24px',
+        border: '1px solid var(--border)',
         padding: '28px 24px', zIndex: 101,
         boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
       }}>
         <div style={{ fontSize: '40px', textAlign: 'center', marginBottom: '16px' }}>⚠️</div>
-        <div style={{ fontSize: '17px', fontWeight: '700', color: '#f0f0ff', textAlign: 'center', marginBottom: '8px' }}>
+        <div style={{ fontSize: '17px', fontWeight: '700', color: 'var(--text-1)', textAlign: 'center', marginBottom: '8px' }}>
           Сбросить прогресс?
         </div>
-        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', textAlign: 'center', lineHeight: '1.6', marginBottom: '24px' }}>
+        <div style={{ fontSize: '13px', color: 'var(--text-2)', textAlign: 'center', lineHeight: '1.6', marginBottom: '24px' }}>
           Весь прогресс, XP и streak будут удалены. Это нельзя отменить.
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={onCancel} style={{
             flex: 1, padding: '13px', borderRadius: '14px',
-            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-            color: '#f0f0ff', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+            background: 'var(--bg-card)', border: '1px solid var(--border)',
+            color: 'var(--text-1)', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
           }}>Отмена</button>
           <button onClick={onConfirm} style={{
             flex: 1, padding: '13px', borderRadius: '14px',
@@ -128,7 +128,7 @@ function ActionRow({ icon, iconBg, iconBorder, label, sub, labelColor, subColor,
       style={{
         display: 'flex', alignItems: 'center', gap: '14px',
         padding: '15px 16px', borderRadius: '16px',
-        background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+        background: 'var(--bg-card)', border: '1px solid var(--border)',
         cursor: 'pointer', textAlign: 'left', width: '100%',
       }}
     >
@@ -139,11 +139,11 @@ function ActionRow({ icon, iconBg, iconBorder, label, sub, labelColor, subColor,
         fontSize: '18px', flexShrink: 0,
       }}>{icon}</div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: '14px', fontWeight: '600', color: labelColor ?? '#f0f0ff' }}>{label}</div>
-        {sub && <div style={{ fontSize: '11px', color: subColor ?? 'rgba(255,255,255,0.35)', marginTop: '2px' }}>{sub}</div>}
+        <div style={{ fontSize: '14px', fontWeight: '600', color: labelColor ?? 'var(--text-1)' }}>{label}</div>
+        {sub && <div style={{ fontSize: '11px', color: subColor ?? 'var(--text-3)', marginTop: '2px' }}>{sub}</div>}
       </div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-        <path d="M9 18l6-6-6-6" stroke={chevronColor ?? 'rgba(255,255,255,0.3)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M9 18l6-6-6-6" stroke={chevronColor ?? 'var(--text-3)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     </button>
   )
@@ -181,13 +181,13 @@ export default function Profile() {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', height: '100%',
-      background: '#0d0f14', color: '#f0f0ff', overflowY: 'auto',
+      background: 'var(--bg)', color: 'var(--text-1)', overflowY: 'auto',
     }}>
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div style={{ padding: '16px 18px 0' }}>
         <h1 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '2px' }}>Профиль</h1>
-        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>Твои достижения</div>
+        <div style={{ fontSize: '12px', color: 'var(--text-2)' }}>Твои достижения</div>
       </div>
 
       {/* ── Avatar card ─────────────────────────────────────────────────── */}
@@ -217,7 +217,7 @@ export default function Profile() {
               <div style={{
                 position: 'absolute', bottom: '-4px', right: '-4px',
                 width: '20px', height: '20px', borderRadius: '50%',
-                background: '#7c3aed', border: '2px solid #0d0f14',
+                background: '#7c3aed', border: '2px solid var(--bg)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '10px',
               }}>✏️</div>
@@ -236,10 +236,10 @@ export default function Profile() {
                     maxLength={20}
                     style={{
                       flex: 1, minWidth: 0,
-                      background: 'rgba(255,255,255,0.08)',
+                      background: 'var(--bg-card-2)',
                       border: '1.5px solid rgba(124,58,237,0.6)',
                       borderRadius: '10px', padding: '7px 10px',
-                      color: '#f0f0ff', fontSize: '15px', fontWeight: '700',
+                      color: 'var(--text-1)', fontSize: '15px', fontWeight: '700',
                       outline: 'none',
                     }}
                   />
@@ -252,7 +252,7 @@ export default function Profile() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '20px', fontWeight: '800', color: '#f0f0ff' }}>
+                  <span style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-1)' }}>
                     {nickname}
                   </span>
                   <button
@@ -273,7 +273,7 @@ export default function Profile() {
                     {rank}
                   </span>
                 </div>
-                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-3)' }}>
                   {examInfo?.label} {examInfo?.desc}
                 </span>
               </div>
@@ -286,7 +286,7 @@ export default function Profile() {
       <div style={{ padding: '12px 18px 0' }}>
         <div style={{
           borderRadius: '18px', overflow: 'hidden',
-          background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+          background: 'var(--bg-card)', border: '1px solid var(--border)',
           display: 'flex',
         }}>
           {[
@@ -296,11 +296,11 @@ export default function Profile() {
           ].map((s, i) => (
             <div key={i} style={{
               flex: 1, padding: '14px 8px', textAlign: 'center',
-              borderRight: i < 2 ? '1px solid rgba(255,255,255,0.07)' : 'none',
+              borderRight: i < 2 ? '1px solid var(--border)' : 'none',
             }}>
               <div style={{ fontSize: '20px', marginBottom: '4px' }}>{s.icon}</div>
               <div style={{ fontSize: '19px', fontWeight: '800', color: s.color, lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginTop: '3px' }}>{s.label}</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-3)', marginTop: '3px' }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -310,14 +310,14 @@ export default function Profile() {
       {subjectsSummary.length > 0 && (
         <div style={{ padding: '16px 18px 0' }}>
           <div style={{
-            fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.35)',
+            fontSize: '11px', fontWeight: '700', color: 'var(--text-3)',
             letterSpacing: '0.07em', marginBottom: '10px',
           }}>
             МОИ ПРЕДМЕТЫ
           </div>
           <div style={{
             borderRadius: '18px', overflow: 'hidden',
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+            background: 'var(--bg-card)', border: '1px solid var(--border)',
           }}>
             {subjectsSummary.map((entry, i) => {
               const info = SUBJECTS.find(s => s.id === entry.id)
@@ -334,7 +334,7 @@ export default function Profile() {
                     padding: '14px 16px', width: '100%', cursor: 'pointer',
                     background: isCurrent ? `rgba(${accent === '#3b82f6' ? '59,130,246' : '124,58,237'},0.07)` : 'transparent',
                     border: 'none',
-                    borderBottom: i < subjectsSummary.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                    borderBottom: i < subjectsSummary.length - 1 ? '1px solid var(--border)' : 'none',
                     textAlign: 'left',
                   }}
                 >
@@ -348,7 +348,7 @@ export default function Profile() {
                     {info.emoji}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '14px', fontWeight: '700', color: '#f0f0ff', marginBottom: '2px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-1)', marginBottom: '2px' }}>
                       {info.label}
                       {isCurrent && (
                         <span style={{
@@ -359,7 +359,7 @@ export default function Profile() {
                         }}>сейчас</span>
                       )}
                     </div>
-                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>
                       {entry.levelsCompleted > 0
                         ? `${entry.levelsCompleted} ${plural(entry.levelsCompleted, 'уровень', 'уровня', 'уровней')} пройдено`
                         : 'Ещё не начат'}
@@ -369,7 +369,7 @@ export default function Profile() {
                     </div>
                   </div>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <path d="M9 18l6-6-6-6" stroke="rgba(255,255,255,0.2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M9 18l6-6-6-6" stroke="var(--text-3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
               )
@@ -381,7 +381,7 @@ export default function Profile() {
       {/* ── Settings ─────────────────────────────────────────────────────── */}
       <div style={{ padding: '16px 18px 36px' }}>
         <div style={{
-          fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.35)',
+          fontSize: '11px', fontWeight: '700', color: 'var(--text-3)',
           letterSpacing: '0.07em', marginBottom: '10px',
         }}>
           НАСТРОЙКИ

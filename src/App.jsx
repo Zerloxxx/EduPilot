@@ -1,5 +1,6 @@
 import React from 'react'
 import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
+import { ThemeProvider } from './contexts/ThemeContext'
 import BottomNav from './components/BottomNav'
 import PhoneFrame from './components/PhoneFrame'
 import Onboarding from './pages/Onboarding'
@@ -45,5 +46,9 @@ function AppContent() {
 }
 
 export default function App() {
-  return <AppContent />
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  )
 }

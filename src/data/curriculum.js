@@ -5,10 +5,14 @@ import csFirst7   from './subjects/cs'
 import mathFirst7 from './subjects/math'
 import ruFirst7   from './subjects/russian'
 
+import ogeCs     from './oge/cs'
+import ogeMath   from './oge/math'
+import ogeRu     from './oge/russian'
+
 export const SUBJECTS = [
   { id: 'math',    label: 'Математика', emoji: '📐', exams: ['oge', 'ege'] },
   { id: 'russian', label: 'Русский',    emoji: '📝', exams: ['oge', 'ege'] },
-  { id: 'cs',      label: 'Информатика',emoji: '💻', exams: ['ege'] },
+  { id: 'cs',      label: 'Информатика',emoji: '💻', exams: ['oge', 'ege'] },
 ]
 
 export const EXAMS = [
@@ -1018,17 +1022,63 @@ function mergeFirst7(richFirst7, fullSections) {
   })
 }
 
-export function getSections(subjectId) {
+// OGE-секции хранят только метаданные (без levels).
+// Добавляем пустую структуру levels чтобы остальной код не падал.
+function normalizeOgeSections(sections) {
+  return sections.map(s => s.levels ? s : {
+    ...s,
+    levels: [
+      { index: 0, theory: { title: s.label, intro: s.description, blocks: [] } },
+      { index: 1, tasks: [] },
+      { index: 2, tasks: [] },
+      { index: 3, tasks: [] },
+      { index: 4, tasks: [] },
+      { index: 5, tasks: [] },
+    ],
+  })
+}
+
+export function getSections(subjectId, exam = 'ege') {
+  if (exam === 'oge') {
+    if (subjectId === 'cs')      return normalizeOgeSections(ogeCs)
+    if (subjectId === 'russian') return normalizeOgeSections(ogeRu)
+    return normalizeOgeSections(ogeMath)
+  }
   if (subjectId === 'cs')      return mergeFirst7(csFirst7,   CS_EGE_SECTIONS)
   if (subjectId === 'russian') return mergeFirst7(ruFirst7,   RUSSIAN_SECTIONS)
   return mergeFirst7(mathFirst7, MATH_SECTIONS)
 }
 
-export function getSection(subjectId, sectionId) {
-  return getSections(subjectId).find(s => s.id === sectionId) ?? null
+// ─── OGE score → grade conversion ────────────────────────────────────────────
+export const OGE_THRESHOLDS = {
+  math:    { max: 32, thresholds: [{ grade: 3, min: 8 }, { grade: 4, min: 15 }, { grade: 5, min: 22 }] },
+  russian: { max: 33, thresholds: [{ grade: 3, min: 8 }, { grade: 4, min: 15 }, { grade: 5, min: 24 }] },
+  cs:      { max: 21, thresholds: [{ grade: 3, min: 5 }, { grade: 4, min: 13 }, { grade: 5, min: 19 }] },
 }
 
-export function getLevel(subjectId, sectionId, levelIndex) {
-  const section = getSection(subjectId, sectionId)
+export function getOgeGrade(points, subjectId) {
+  const data = OGE_THRESHOLDS[subjectId] ?? OGE_THRESHOLDS.math
+  const sorted = [...data.thresholds].sort((a, b) => b.min - a.min)
+  for (const { grade, min } of sorted) {
+    if (points >= min) return grade
+  }
+  return 2
+}
+
+export function getOgeNextGrade(points, subjectId) {
+  const data = OGE_THRESHOLDS[subjectId] ?? OGE_THRESHOLDS.math
+  const sorted = [...data.thresholds].sort((a, b) => a.min - b.min)
+  for (const { grade, min } of sorted) {
+    if (points < min) return { grade, need: min - points, min }
+  }
+  return null // уже 5
+}
+
+export function getSection(subjectId, sectionId, exam = 'ege') {
+  return getSections(subjectId, exam).find(s => s.id === sectionId) ?? null
+}
+
+export function getLevel(subjectId, sectionId, levelIndex, exam = 'ege') {
+  const section = getSection(subjectId, sectionId, exam)
   return section?.levels?.[levelIndex] ?? null
 }

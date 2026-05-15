@@ -1,59 +1,60 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProgress } from '../hooks/useProgress'
+import ReactMarkdown from 'react-markdown'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import 'katex/dist/katex.min.css'
 
 const OPENAI_KEY = import.meta.env.VITE_OPENAI_KEY
 const MODEL = 'gpt-4o-mini'
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
-const CHATS_KEY       = 'edupilot_chats_v1'
-const LAST_THREAD_KEY = 'edupilot_last_thread_v1'
+// Ключ namespace = "${exam}_${subject}" — ege_math и oge_math хранятся отдельно
+const CHATS_KEY       = 'edupilot_chats_v2'
+const LAST_THREAD_KEY = 'edupilot_last_thread_v2'
 
 function readAll()       { try { return JSON.parse(localStorage.getItem(CHATS_KEY) ?? '{}') } catch { return {} } }
 function writeAll(d)     { try { localStorage.setItem(CHATS_KEY, JSON.stringify(d)) } catch {} }
 
-function readLastThread(subject) {
-  try { return (JSON.parse(localStorage.getItem(LAST_THREAD_KEY) ?? '{}'))[subject] ?? 'general' } catch { return 'general' }
+function readLastThread(ns) {
+  try { return (JSON.parse(localStorage.getItem(LAST_THREAD_KEY) ?? '{}'))[ns] ?? 'general' } catch { return 'general' }
 }
-function writeLastThread(subject, id) {
+function writeLastThread(ns, id) {
   try {
     const d = JSON.parse(localStorage.getItem(LAST_THREAD_KEY) ?? '{}')
-    localStorage.setItem(LAST_THREAD_KEY, JSON.stringify({ ...d, [subject]: id }))
+    localStorage.setItem(LAST_THREAD_KEY, JSON.stringify({ ...d, [ns]: id }))
   } catch {}
 }
 
-// Read messages for one thread (pure localStorage, no React state)
-function readMessages(subject, threadId) {
-  return readAll()[subject]?.[threadId]?.messages ?? []
+function readMessages(ns, threadId) {
+  return readAll()[ns]?.[threadId]?.messages ?? []
 }
 
-// Persist messages for one thread without touching other threads
-function writeMessages(subject, threadId, messages) {
+function writeMessages(ns, threadId, messages) {
   const all = readAll()
-  if (!all[subject]) all[subject] = {}
-  if (!all[subject][threadId]) return // thread must exist
-  all[subject][threadId].messages = messages
-  all[subject][threadId].lastMessageAt = Date.now()
+  if (!all[ns]) all[ns] = {}
+  if (!all[ns][threadId]) return
+  all[ns][threadId].messages = messages
+  all[ns][threadId].lastMessageAt = Date.now()
   writeAll(all)
 }
 
-// Ensure a thread object exists in storage; returns current thread meta
-function ensureThread(subject, threadId, title, emoji, context) {
+function ensureThread(ns, threadId, title, emoji, context) {
   const all = readAll()
-  if (!all[subject]) all[subject] = {}
-  if (!all[subject][threadId]) {
-    all[subject][threadId] = { title, emoji, context: context ?? null, messages: [], createdAt: Date.now() }
+  if (!all[ns]) all[ns] = {}
+  if (!all[ns][threadId]) {
+    all[ns][threadId] = { title, emoji, context: context ?? null, messages: [], createdAt: Date.now() }
     writeAll(all)
   } else if (context != null) {
-    all[subject][threadId].context = context
+    all[ns][threadId].context = context
     writeAll(all)
   }
-  return all[subject][threadId]
+  return all[ns][threadId]
 }
 
-// Full thread meta map for the picker (no messages, just header info)
-function readThreadIndex(subject) {
-  const threads = readAll()[subject] ?? {}
+function readThreadIndex(ns) {
+  const threads = readAll()[ns] ?? {}
   return Object.fromEntries(
     Object.entries(threads).map(([id, t]) => {
       const lastReal = (t.messages ?? []).filter(m => m.role !== 'context-card').slice(-1)[0]
@@ -69,18 +70,29 @@ function readThreadIndex(subject) {
 }
 
 // ─── System prompt ────────────────────────────────────────────────────────────
-function buildSystemPrompt(ctx) {
-  const base = `Ты — AI-репетитор приложения EduPilot. Помогаешь российским школьникам готовиться к ОГЭ и ЕГЭ.
+const SUBJECT_NAMES = { math: 'Математика', cs: 'Информатика', russian: 'Русский язык' }
+const EXAM_NAMES    = { ege: 'ЕГЭ (11 класс)', oge: 'ОГЭ (9 класс)' }
+
+function buildSystemPrompt(ctx, exam, subject) {
+  const examName    = EXAM_NAMES[exam]    ?? 'ЕГЭ'
+  const subjectName = SUBJECT_NAMES[subject] ?? subject
+
+  const base = `Ты — AI-репетитор приложения EduPilot. Помогаешь российским школьникам готовиться к ${examName} по предмету ${subjectName}.
+
+Текущий контекст: ${examName}, ${subjectName}.
 
 Правила общения:
 - Отвечай ТОЛЬКО на русском языке
-- Говори дружелюбно, как живой репетитор для подростка 14–17 лет
+- Говори дружелюбно, как живой репетитор для подростка ${exam === 'oge' ? '13–15' : '15–17'} лет
 - Объясняй простым языком, без лишней воды
 - НЕ задавай встречных вопросов — ученик пришёл за объяснением, а не за диалогом
 - Сразу давай ответ и объяснение: что правильно, почему, как решать
+- Ориентируйся на уровень сложности ${examName} — не усложняй и не упрощай сверх нужного
 - Используй эмодзи умеренно
 - Ответы держи компактными: 3–5 предложений обычно достаточно
-- НИКОГДА не используй LaTeX-разметку (\\(...\\), \\[...\\], $$...$$). Пиши математику простым текстом: 2^6, n^2, sqrt(n), и т.д.`
+- Для математических формул используй LaTeX: inline — $формула$, блочный — $$формула$$
+- Примеры: $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$, $\\sqrt{16} = 4$, $$\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$$
+- Обычный текст пиши без LaTeX, формулы — с LaTeX`
 
   if (!ctx) return base
 
@@ -130,6 +142,34 @@ function buildApiHistory(messages) {
 const QUICK_DEFAULT = ['Объясни проще 🙏', 'Дай похожее задание', 'Как решать такие задачи?', 'Что надо знать для ЕГЭ?']
 const QUICK_TASK    = ['Объясни ход решения', 'Покажи похожий пример', 'Что я сделал не так?', 'Как запомнить правило?']
 
+// ─── Math-aware message renderer ─────────────────────────────────────────────
+const MD_COMPONENTS = {
+  p:      ({ children }) => <p style={{ margin: '0 0 6px', lineHeight: 1.65 }}>{children}</p>,
+  strong: ({ children }) => <strong style={{ color: 'var(--text-1)', fontWeight: '800' }}>{children}</strong>,
+  em:     ({ children }) => <em style={{ color: '#c4b5fd' }}>{children}</em>,
+  code:   ({ children, className }) => {
+    const isBlock = className?.startsWith('language-')
+    return isBlock
+      ? <pre style={{ background: 'var(--bg-card-2)', borderRadius: '10px', padding: '10px 13px', overflowX: 'auto', fontSize: '12px', margin: '6px 0' }}><code>{children}</code></pre>
+      : <code style={{ background: 'var(--border)', borderRadius: '5px', padding: '1px 5px', fontFamily: 'monospace', fontSize: '13px' }}>{children}</code>
+  },
+  ul: ({ children }) => <ul style={{ paddingLeft: '18px', margin: '4px 0' }}>{children}</ul>,
+  ol: ({ children }) => <ol style={{ paddingLeft: '18px', margin: '4px 0' }}>{children}</ol>,
+  li: ({ children }) => <li style={{ margin: '2px 0', lineHeight: 1.55 }}>{children}</li>,
+}
+
+function MathMessage({ text }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkMath]}
+      rehypePlugins={[rehypeKatex]}
+      components={MD_COMPONENTS}
+    >
+      {text}
+    </ReactMarkdown>
+  )
+}
+
 // ─── Thread Picker ────────────────────────────────────────────────────────────
 function ThreadPicker({ threadIndex, activeId, onSelect, onClose, subject }) {
   const sorted = Object.entries(threadIndex).sort(([aId, a], [bId, b]) => {
@@ -145,14 +185,14 @@ function ThreadPicker({ threadIndex, activeId, onSelect, onClose, subject }) {
       display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
     }}>
       <div onClick={e => e.stopPropagation()} className="anim-slide-up" style={{
-        background: '#12121e', borderRadius: '24px 24px 0 0',
-        border: '1px solid rgba(255,255,255,0.08)', borderBottom: 'none',
+        background: 'var(--bg)', borderRadius: '24px 24px 0 0',
+        border: '1px solid var(--border)', borderBottom: 'none',
         padding: '0 0 32px', maxHeight: '70%', overflowY: 'auto',
       }}>
         <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
-          <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.15)' }} />
+          <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'var(--border-2)' }} />
         </div>
-        <div style={{ padding: '8px 18px 14px', fontSize: '13px', fontWeight: '700', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.06em' }}>
+        <div style={{ padding: '8px 18px 14px', fontSize: '13px', fontWeight: '700', color: 'var(--text-2)', letterSpacing: '0.06em' }}>
           ТРЕДЫ · {subject?.toUpperCase()}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '0 12px' }}>
@@ -168,15 +208,15 @@ function ThreadPicker({ threadIndex, activeId, onSelect, onClose, subject }) {
               }}>
                 <div style={{
                   width: '40px', height: '40px', borderRadius: '13px', flexShrink: 0,
-                  background: isActive ? 'linear-gradient(135deg, #7c3aed, #6366f1)' : 'rgba(255,255,255,0.06)',
-                  border: isActive ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                  background: isActive ? 'linear-gradient(135deg, #7c3aed, #6366f1)' : 'var(--bg-card)',
+                  border: isActive ? 'none' : '1px solid var(--border)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px',
                 }}>{t.emoji}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '14px', fontWeight: '700', color: isActive ? '#c4b5fd' : '#f0f0ff', marginBottom: '2px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '700', color: isActive ? '#c4b5fd' : 'var(--text-1)', marginBottom: '2px' }}>
                     {t.title}
                   </div>
-                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {t.lastMessageText?.slice(0, 45) ?? 'Нет сообщений'}{(t.lastMessageText?.length ?? 0) > 45 ? '…' : ''}
                   </div>
                 </div>
@@ -210,7 +250,7 @@ function ContextCard({ taskContext }) {
         </span>
       </div>
       <div style={{ padding: '12px 14px 10px' }}>
-        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.55, marginBottom: '10px' }}>
+        <p style={{ fontSize: '13px', color: 'var(--text-1)', lineHeight: 1.55, marginBottom: '10px' }}>
           {taskContext.taskText}
         </p>
         {taskContext.userAnswer && (
@@ -223,7 +263,7 @@ function ContextCard({ taskContext }) {
             ❌ Твой ответ: «{taskContext.userAnswer}»
           </div>
         )}
-        <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '10px' }}>
+        <p style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '10px' }}>
           Задай свой вопрос ↓
         </p>
       </div>
@@ -235,6 +275,8 @@ function ContextCard({ taskContext }) {
 export default function Chat() {
   const { progress } = useProgress()
   const subject = progress?.subject ?? 'cs'
+  const exam    = progress?.exam    ?? 'ege'
+  const ns      = `${exam}_${subject}` // e.g. ege_math, oge_cs
 
   // Read incoming context once (clears localStorage entry)
   const [incomingCtx] = useState(() => {
@@ -248,36 +290,36 @@ export default function Chat() {
   // ── Determine initial active thread & init storage ───────────────────────
   const [activeThreadId, setActiveThreadIdRaw] = useState(() => {
     // Ensure general thread exists
-    ensureThread(subject, 'general', 'Общий чат', '💬', null)
+    ensureThread(ns, 'general', 'Общий чат', '💬', null)
 
     if (incomingCtx?.threadId) {
       // Create / update section thread
-      ensureThread(subject, incomingCtx.threadId, incomingCtx.threadTitle ?? 'Разбор задания', incomingCtx.threadEmoji ?? '📝', incomingCtx)
-      writeLastThread(subject, incomingCtx.threadId)
+      ensureThread(ns, incomingCtx.threadId, incomingCtx.threadTitle ?? 'Разбор задания', incomingCtx.threadEmoji ?? '📝', incomingCtx)
+      writeLastThread(ns, incomingCtx.threadId)
       return incomingCtx.threadId
     }
-    return readLastThread(subject)
+    return readLastThread(ns)
   })
 
   // ── Active thread meta (for header) ─────────────────────────────────────
-  const [threadIndex, setThreadIndex] = useState(() => readThreadIndex(subject))
+  const [threadIndex, setThreadIndex] = useState(() => readThreadIndex(ns))
 
   const activeMeta = threadIndex[activeThreadId] ?? threadIndex.general ?? { title: 'AI-репетитор', emoji: '✨', context: null }
 
   // ── Messages — ONLY for the active thread ───────────────────────────────
   const [messages, setMessages] = useState(() => {
-    const stored = readMessages(subject, activeThreadId)
+    const stored = readMessages(ns, activeThreadId)
 
     if (incomingCtx?.threadId === activeThreadId) {
       // Append context bubble and persist
       const updated = [...stored, makeContextBubble(incomingCtx)]
-      writeMessages(subject, activeThreadId, updated)
+      writeMessages(ns, activeThreadId, updated)
       return updated
     }
 
     if (stored.length === 0) {
       const welcome = [makeWelcome()]
-      writeMessages(subject, activeThreadId, welcome)
+      writeMessages(ns, activeThreadId, welcome)
       return welcome
     }
 
@@ -286,7 +328,7 @@ export default function Chat() {
 
   // ── API state ────────────────────────────────────────────────────────────
   const apiHistory    = useRef(buildApiHistory(messages))
-  const systemPromptRef = useRef(buildSystemPrompt(activeMeta.context ?? null))
+  const systemPromptRef = useRef(buildSystemPrompt(activeMeta.context ?? null, exam, subject))
 
   // ── UI state ─────────────────────────────────────────────────────────────
   const [input, setInput]       = useState('')
@@ -304,37 +346,37 @@ export default function Chat() {
   const appendMessage = useCallback((msg) => {
     setMessages(prev => {
       const updated = [...prev, msg]
-      writeMessages(subject, activeThreadId, updated)
+      writeMessages(ns, activeThreadId, updated)
       // Refresh thread index so picker preview updates
-      setThreadIndex(readThreadIndex(subject))
+      setThreadIndex(readThreadIndex(ns))
       return updated
     })
-  }, [subject, activeThreadId])
+  }, [ns, activeThreadId])
 
   // ── Switch thread ─────────────────────────────────────────────────────────
   const switchThread = useCallback((threadId) => {
     if (threadId === activeThreadId) { setShowPicker(false); return }
 
     // Load messages fresh from localStorage (no stale React state involved)
-    let msgs = readMessages(subject, threadId)
+    let msgs = readMessages(ns, threadId)
 
     if (msgs.length === 0) {
       msgs = [makeWelcome()]
-      writeMessages(subject, threadId, msgs)
+      writeMessages(ns, threadId, msgs)
     }
 
     // Update API context for new thread
-    const meta = readAll()[subject]?.[threadId]
+    const meta = readAll()[ns]?.[threadId]
     apiHistory.current = buildApiHistory(msgs)
-    systemPromptRef.current = buildSystemPrompt(meta?.context ?? null)
+    systemPromptRef.current = buildSystemPrompt(meta?.context ?? null, exam, subject)
 
-    writeLastThread(subject, threadId)
+    writeLastThread(ns, threadId)
     setActiveThreadIdRaw(threadId)
     setMessages(msgs)
-    setThreadIndex(readThreadIndex(subject))
+    setThreadIndex(readThreadIndex(ns))
     setShowPicker(false)
     setError(null)
-  }, [subject, activeThreadId])
+  }, [ns, exam, subject, activeThreadId])
 
   // ── Send message ──────────────────────────────────────────────────────────
   const sendMessage = async (text) => {
@@ -368,12 +410,12 @@ export default function Chat() {
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative', background: 'var(--bg)', color: 'var(--text-1)' }}>
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div style={{
-        padding: '10px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)',
-        flexShrink: 0, background: 'rgba(8,8,15,0.7)',
+        padding: '10px 16px 12px', borderBottom: '1px solid var(--border)',
+        flexShrink: 0, background: 'var(--nav-bg)',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -389,11 +431,11 @@ export default function Chat() {
             textAlign: 'left', padding: 0, minWidth: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ fontSize: '14px', fontWeight: '700', color: '#f0f0ff' }}>
+              <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-1)' }}>
                 {activeMeta.emoji} {activeMeta.title}
               </span>
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.45 }}>
-                <path d="M4 6l4 4 4-4" stroke="#f0f0ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M4 6l4 4 4-4" stroke="var(--text-1)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
             <div style={{ fontSize: '11px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>
@@ -404,12 +446,12 @@ export default function Chat() {
 
           <button onClick={() => setShowPicker(true)} className="tap-scale" style={{
             width: '36px', height: '36px', borderRadius: '12px', flexShrink: 0,
-            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
+            background: 'var(--bg-card)', border: '1px solid var(--border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
             position: 'relative',
           }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M3 6h18M3 12h18M3 18h18" stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M3 6h18M3 12h18M3 18h18" stroke="var(--text-2)" strokeWidth="2" strokeLinecap="round"/>
             </svg>
             {threadCount > 1 && (
               <div style={{
@@ -418,7 +460,7 @@ export default function Chat() {
                 background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
                 fontSize: '9px', fontWeight: '800', color: '#fff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: '1.5px solid #08080f',
+                border: '1.5px solid var(--bg)',
               }}>{threadCount}</div>
             )}
           </button>
@@ -462,12 +504,15 @@ export default function Chat() {
                 <div style={{
                   padding: '12px 16px',
                   borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                  background: msg.role === 'user' ? 'linear-gradient(135deg, #7c3aed, #6366f1)' : 'rgba(255,255,255,0.05)',
-                  border: msg.role === 'user' ? 'none' : '1px solid rgba(255,255,255,0.08)',
-                  fontSize: '14px', lineHeight: '1.6', color: '#f0f0ff', whiteSpace: 'pre-wrap',
+                  background: msg.role === 'user' ? 'linear-gradient(135deg, #7c3aed, #6366f1)' : 'var(--bg-card)',
+                  border: msg.role === 'user' ? 'none' : '1px solid var(--border)',
+                  fontSize: '14px', lineHeight: '1.6', color: msg.role === 'user' ? '#fff' : 'var(--text-1)',
                   boxShadow: msg.role === 'user' ? '0 4px 16px rgba(124,58,237,0.25)' : 'none',
                 }}>
-                  {msg.text}
+                  {msg.role === 'user'
+                    ? <span style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</span>
+                    : <MathMessage text={msg.text} />
+                  }
                 </div>
                 <p style={{
                   fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '4px',
@@ -488,7 +533,7 @@ export default function Chat() {
             }}>✨</div>
             <div style={{
               padding: '12px 16px', borderRadius: '18px 18px 18px 4px',
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+              background: 'var(--bg-card)', border: '1px solid var(--border)',
               display: 'flex', gap: '4px', alignItems: 'center',
             }}>
               {[0, 1, 2].map(i => (
@@ -532,7 +577,7 @@ export default function Chat() {
       <div style={{ padding: '8px 16px 24px', display: 'flex', gap: '10px', alignItems: 'flex-end', flexShrink: 0 }}>
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center',
-          background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
+          background: 'var(--bg-card)', border: '1px solid var(--border)',
           borderRadius: '20px', padding: '10px 16px',
         }}>
           <input
@@ -543,7 +588,7 @@ export default function Chat() {
             disabled={typing}
             style={{
               flex: 1, background: 'none', border: 'none', outline: 'none',
-              fontSize: '14px', color: '#f0f0ff', fontFamily: 'inherit',
+              fontSize: '14px', color: 'var(--text-1)', fontFamily: 'inherit',
             }}
           />
         </div>
@@ -553,7 +598,7 @@ export default function Chat() {
           className={input.trim() && !typing ? 'tap-scale' : ''}
           style={{
             width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
-            background: input.trim() && !typing ? 'linear-gradient(135deg, #7c3aed, #6366f1)' : 'rgba(255,255,255,0.06)',
+            background: input.trim() && !typing ? 'linear-gradient(135deg, #7c3aed, #6366f1)' : 'var(--bg-card-2)',
             border: 'none', cursor: input.trim() && !typing ? 'pointer' : 'default',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '16px', transition: 'all 0.2s',
@@ -569,7 +614,7 @@ export default function Chat() {
           activeId={activeThreadId}
           onSelect={switchThread}
           onClose={() => setShowPicker(false)}
-          subject={subject}
+          subject={`${EXAM_NAMES[exam] ?? exam} · ${SUBJECT_NAMES[subject] ?? subject}`}
         />
       )}
 

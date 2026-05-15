@@ -45,8 +45,8 @@ function Shell({ section, title, subtitle, children, right, onBack }) {
   return (
     <div className="page-enter" style={{
       minHeight: '100%',
-      background: '#0d0f14',
-      color: '#f0f0ff',
+      background: 'var(--bg)',
+      color: 'var(--text-1)',
       display: 'flex',
       flexDirection: 'column',
     }}>
@@ -56,9 +56,9 @@ function Shell({ section, title, subtitle, children, right, onBack }) {
             onClick={onBack}
             style={{
               width: '36px', height: '36px', borderRadius: '12px',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: 'rgba(255,255,255,0.7)', cursor: 'pointer',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-2)', cursor: 'pointer',
               fontSize: '18px',
             }}
           >
@@ -70,7 +70,7 @@ function Shell({ section, title, subtitle, children, right, onBack }) {
             </div>
             <div style={{ fontSize: '20px', fontWeight: '900', lineHeight: 1.1 }}>{title}</div>
             {subtitle && (
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '3px' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-2)', marginTop: '3px' }}>
                 {subtitle}
               </div>
             )}
@@ -87,22 +87,22 @@ function TheoryBlock({ block, color }) {
   if (block.type === 'formulas') {
     return (
       <div style={{ marginBottom: '12px' }}>
-        <div style={{ fontSize: '12px', fontWeight: '800', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.06em', marginBottom: '8px' }}>
+        <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-2)', letterSpacing: '0.06em', marginBottom: '8px' }}>
           {block.title}
         </div>
         <div style={{
           borderRadius: '18px',
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           overflow: 'hidden',
         }}>
           {block.items.map((item, index) => (
             <div key={item.label} style={{
               display: 'flex', justifyContent: 'space-between', gap: '12px',
               padding: '13px 15px',
-              borderBottom: index < block.items.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+              borderBottom: index < block.items.length - 1 ? '1px solid var(--border)' : 'none',
             }}>
-              <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.62)' }}>{item.label}</span>
+              <span style={{ fontSize: '13px', color: 'var(--text-2)' }}>{item.label}</span>
               <span style={{ fontSize: '13px', color, fontWeight: '800', fontFamily: 'monospace', textAlign: 'right' }}>
                 {item.formula}
               </span>
@@ -116,7 +116,7 @@ function TheoryBlock({ block, color }) {
   const accent = block.type === 'notes' ? '#10b981' : '#f59e0b'
   return (
     <div style={{ marginBottom: '12px' }}>
-      <div style={{ fontSize: '12px', fontWeight: '800', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.06em', marginBottom: '8px' }}>
+      <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-2)', letterSpacing: '0.06em', marginBottom: '8px' }}>
         {block.title}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
@@ -130,7 +130,7 @@ function TheoryBlock({ block, color }) {
             <span style={{ color: accent, fontSize: '13px', fontWeight: '900', marginTop: '1px' }}>
               {block.type === 'notes' ? '✓' : '•'}
             </span>
-            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.62)', lineHeight: 1.5 }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: 1.5 }}>
               {item}
             </span>
           </div>
@@ -153,7 +153,7 @@ function TheoryScreen({ section, theory, onStart, onBack }) {
           marginBottom: '14px',
         }}>
           <div style={{ fontSize: '17px', fontWeight: '900', marginBottom: '7px' }}>{theory.title}</div>
-          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.62)', lineHeight: 1.6 }}>{theory.intro}</p>
+          <p style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: 1.6 }}>{theory.intro}</p>
         </div>
         {theory.blocks.map((block, index) => (
           <TheoryBlock key={index} block={block} color={color} />
@@ -174,8 +174,8 @@ function EntryScreen({ section, meta, levelData, isTheory, hasTasks, hasDraft, o
         <div style={{
           borderRadius: '22px',
           padding: '20px',
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           marginBottom: '14px',
           boxShadow: `0 6px 24px rgba(${hexToRgb(color)},0.12)`,
         }}>
@@ -192,7 +192,7 @@ function EntryScreen({ section, meta, levelData, isTheory, hasTasks, hasDraft, o
           <div style={{ fontSize: '22px', fontWeight: '900', marginBottom: '8px' }}>
             {isTheory ? 'Разобрать основу' : hasTasks ? `${levelData.tasks.length} задания` : 'Скоро появится'}
           </div>
-          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.48)', lineHeight: 1.6 }}>
+          <div style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: 1.6 }}>
             {isTheory
               ? 'Короткая теория, важные правила и список того, что стоит выписать в конспект.'
               : hasTasks
@@ -224,7 +224,7 @@ function EntryScreen({ section, meta, levelData, isTheory, hasTasks, hasDraft, o
   )
 }
 
-function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onConsumeEnergy, energyData, onScheduleReview }) {
+function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onConsumeEnergy, energyData, onScheduleReview, exam }) {
   const navigate = useNavigate()
   const meta = LEVEL_META[levelIndex]
   const color = section.color ?? meta.color ?? '#3b82f6'
@@ -371,7 +371,7 @@ function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onCons
           {state.queue.map((_, index) => (
             <div key={index} style={{
               flex: 1, height: '5px', borderRadius: '5px',
-              background: index < state.currentQueueIndex ? '#3b82f6' : index === state.currentQueueIndex ? color : 'rgba(255,255,255,0.08)',
+              background: index < state.currentQueueIndex ? '#3b82f6' : index === state.currentQueueIndex ? color : 'var(--border)',
               boxShadow: index === state.currentQueueIndex ? `0 0 8px rgba(${hexToRgb(color)},0.5)` : 'none',
             }} />
           ))}
@@ -380,14 +380,14 @@ function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onCons
         <div style={{
           borderRadius: '20px',
           padding: '18px',
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           marginBottom: '12px',
         }}>
           <div style={{ display: 'inline-flex', padding: '4px 10px', borderRadius: '9px', background: `rgba(${hexToRgb(color)},0.14)`, color, fontSize: '11px', fontWeight: '800', marginBottom: '10px' }}>
-            ЕГЭ №{section.taskNumber}
+            {exam === 'oge' ? 'ОГЭ' : 'ЕГЭ'} №{section.taskNumber}
           </div>
-          <div style={{ fontSize: '15px', lineHeight: 1.65, color: '#f0f0ff', fontWeight: '600' }}>{task.text}</div>
+          <div style={{ fontSize: '15px', lineHeight: 1.65, color: 'var(--text-1)', fontWeight: '600' }}>{task.text}</div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', marginBottom: '14px' }}>
@@ -402,9 +402,9 @@ function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onCons
                 style={{
                   display: 'flex', alignItems: 'center', gap: '12px',
                   padding: '13px 14px', borderRadius: '15px',
-                  background: wrong ? 'rgba(239,68,68,0.08)' : active ? `rgba(${hexToRgb(color)},0.12)` : 'rgba(255,255,255,0.035)',
-                  border: wrong ? '1.5px solid rgba(239,68,68,0.35)' : active ? `1.5px solid rgba(${hexToRgb(color)},0.55)` : '1px solid rgba(255,255,255,0.08)',
-                  color: wrong ? '#f87171' : active ? color : 'rgba(255,255,255,0.72)',
+                  background: wrong ? 'rgba(239,68,68,0.08)' : active ? `rgba(${hexToRgb(color)},0.12)` : 'var(--bg-card)',
+                  border: wrong ? '1.5px solid rgba(239,68,68,0.35)' : active ? `1.5px solid rgba(${hexToRgb(color)},0.55)` : '1px solid var(--border)',
+                  color: wrong ? '#f87171' : active ? color : 'var(--text-2)',
                   textAlign: 'left', cursor: state.submitted ? 'default' : 'pointer',
                   fontSize: '14px', fontWeight: '650',
                   transition: 'all 0.15s ease',
@@ -412,7 +412,7 @@ function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onCons
               >
                 <span style={{
                   width: '28px', height: '28px', borderRadius: '9px',
-                  background: wrong ? 'rgba(239,68,68,0.14)' : active ? `rgba(${hexToRgb(color)},0.18)` : 'rgba(255,255,255,0.06)',
+                  background: wrong ? 'rgba(239,68,68,0.14)' : active ? `rgba(${hexToRgb(color)},0.18)` : 'var(--bg-card-2)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '11px', fontWeight: '900',
                   flexShrink: 0,
@@ -430,7 +430,7 @@ function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onCons
             padding: '13px 15px', borderRadius: '16px',
             background: 'rgba(16,185,129,0.08)',
             border: '1px solid rgba(16,185,129,0.22)',
-            color: 'rgba(255,255,255,0.7)',
+            color: 'var(--text-1)',
             fontSize: '13px', lineHeight: 1.5, marginBottom: '12px',
           }}>
             <strong style={{ color: '#10b981' }}>Верно.</strong> {task.explanation.tip}
@@ -441,24 +441,24 @@ function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onCons
           <div style={{
             borderRadius: '18px',
             border: `1px solid rgba(${hexToRgb(color)},0.28)`,
-            background: 'rgba(255,255,255,0.035)',
+            background: 'var(--bg-card)',
             overflow: 'hidden',
             marginBottom: '12px',
           }}>
             <div style={{ padding: '12px 14px', background: `rgba(${hexToRgb(color)},0.12)` }}>
               <div style={{ fontSize: '13px', fontWeight: '900', color }}>Подсказка без ответа</div>
-              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginTop: '2px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-2)', marginTop: '2px' }}>
                 Правильный вариант не показываем, чтобы ты дошел до него сам.
               </div>
             </div>
             <div style={{ padding: '13px 14px' }}>
-              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.64)', lineHeight: 1.55, marginBottom: '10px' }}>
+              <div style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: 1.55, marginBottom: '10px' }}>
                 {task.explanation.error}
               </div>
               {task.explanation.steps.slice(0, 2).map((step, index) => (
                 <div key={step} style={{ display: 'flex', gap: '9px', marginBottom: '7px' }}>
                   <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: `rgba(${hexToRgb(color)},0.16)`, color, fontSize: '10px', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{index + 1}</span>
-                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>{step}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-2)', lineHeight: 1.5 }}>{step}</span>
                 </div>
               ))}
             </div>
@@ -504,11 +504,11 @@ function InfoRow({ icon, text }) {
     <div style={{
       display: 'flex', alignItems: 'center', gap: '12px',
       padding: '12px 14px', borderRadius: '15px',
-      background: 'rgba(255,255,255,0.035)',
-      border: '1px solid rgba(255,255,255,0.07)',
+      background: 'var(--bg-card)',
+      border: '1px solid var(--border)',
     }}>
       <span style={{ fontSize: '16px' }}>{icon}</span>
-      <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.58)', lineHeight: 1.35 }}>{text}</span>
+      <span style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: 1.35 }}>{text}</span>
     </div>
   )
 }
@@ -525,8 +525,8 @@ export default function LevelScreen() {
     return null
   }
 
-  const section = getSection(progress.subject, sectionId)
-  const levelData = getLevel(progress.subject, sectionId, levelIndex)
+  const section = getSection(progress.subject, sectionId, progress.exam ?? 'ege')
+  const levelData = getLevel(progress.subject, sectionId, levelIndex, progress.exam ?? 'ege')
   const meta = LEVEL_META[levelIndex]
 
   if (!section || !levelData || !meta) {
@@ -600,6 +600,7 @@ export default function LevelScreen() {
         onConsumeEnergy={consumeEnergy}
         energyData={energyData}
         onScheduleReview={scheduleReview}
+        exam={progress.exam ?? 'ege'}
       />
     )
   }

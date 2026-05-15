@@ -55,7 +55,7 @@ export default function Onboarding() {
             width: i === step ? '22px' : '7px',
             background: i <= step
               ? 'linear-gradient(90deg,#7c3aed,#a855f7)'
-              : 'rgba(255,255,255,0.1)',
+              : 'var(--border-2)',
             transition: 'all 0.3s ease',
           }} />
         ))}
@@ -77,13 +77,13 @@ export default function Onboarding() {
                   flex: 1, padding: '20px 14px', borderRadius: '18px', cursor: 'pointer',
                   border: selectedExam === exam.id
                     ? '1.5px solid rgba(168,85,247,0.6)'
-                    : '1px solid rgba(255,255,255,0.07)',
+                    : '1px solid var(--border)',
                   background: selectedExam === exam.id
-                    ? 'rgba(124,58,237,0.15)' : 'rgba(255,255,255,0.03)',
+                    ? 'rgba(124,58,237,0.15)' : 'var(--bg-card)',
                   transition: 'all 0.2s', textAlign: 'center',
                   boxShadow: selectedExam === exam.id ? '0 0 20px rgba(124,58,237,0.2)' : 'none',
                 }}>
-                <div style={{ fontSize: '26px', fontWeight: '800', color: selectedExam === exam.id ? '#a855f7' : '#f0f0ff', marginBottom: '4px' }}>
+                <div style={{ fontSize: '26px', fontWeight: '800', color: selectedExam === exam.id ? '#a855f7' : 'var(--text-1)', marginBottom: '4px' }}>
                   {exam.label}
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{exam.desc}</div>
@@ -110,14 +110,14 @@ export default function Onboarding() {
                   padding: '16px 18px', borderRadius: '18px', cursor: 'pointer',
                   border: selectedSubject === s.id
                     ? '1.5px solid rgba(168,85,247,0.6)'
-                    : '1px solid rgba(255,255,255,0.07)',
+                    : '1px solid var(--border)',
                   background: selectedSubject === s.id
-                    ? 'rgba(124,58,237,0.15)' : 'rgba(255,255,255,0.03)',
+                    ? 'rgba(124,58,237,0.15)' : 'var(--bg-card)',
                   transition: 'all 0.2s', textAlign: 'left',
                   boxShadow: selectedSubject === s.id ? '0 0 20px rgba(124,58,237,0.2)' : 'none',
                 }}>
                 <span style={{ fontSize: '26px' }}>{s.emoji}</span>
-                <span style={{ fontSize: '16px', fontWeight: '600', color: selectedSubject === s.id ? '#a855f7' : '#f0f0ff' }}>
+                <span style={{ fontSize: '16px', fontWeight: '600', color: selectedSubject === s.id ? '#a855f7' : 'var(--text-1)' }}>
                   {s.label}
                 </span>
                 {selectedSubject === s.id && (

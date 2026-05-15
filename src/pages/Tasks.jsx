@@ -56,7 +56,7 @@ export default function Tasks() {
       </div>
 
       {/* Progress bar */}
-      <div style={{ height: '4px', borderRadius: '4px', background: 'rgba(255,255,255,0.06)', marginBottom: '24px' }}>
+      <div style={{ height: '4px', borderRadius: '4px', background: 'var(--border)', marginBottom: '24px' }}>
         <div style={{
           height: '100%', width: '30%', borderRadius: '4px',
           background: 'linear-gradient(90deg, #7c3aed, #a855f7)',
@@ -73,7 +73,7 @@ export default function Tasks() {
           }}>{TASK.number}</span>
           <span style={{
             fontSize: '11px', fontWeight: '600', padding: '4px 10px', borderRadius: '8px',
-            background: 'rgba(255,255,255,0.06)', color: 'var(--color-text-muted)',
+            background: 'var(--bg-card-2)', color: 'var(--text-2)',
           }}>{TASK.topic}</span>
         </div>
         <p style={{ fontSize: '16px', lineHeight: '1.6', fontWeight: '500' }}>
@@ -84,9 +84,9 @@ export default function Tasks() {
       {/* Answer options */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
         {TASK.options.map((opt, i) => {
-          let bg = 'rgba(255,255,255,0.03)'
-          let border = '1px solid rgba(255,255,255,0.07)'
-          let color = '#f0f0ff'
+          let bg = 'var(--bg-card)'
+          let border = '1px solid var(--border)'
+          let color = 'var(--text-1)'
           if (submitted) {
             if (i === TASK.correct) {
               bg = 'rgba(16,185,129,0.12)'; border = '1px solid rgba(16,185,129,0.4)'; color = '#10b981'

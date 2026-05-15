@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProgress } from '../hooks/useProgress'
-import { getSections, SUBJECTS, LEVEL_META } from '../data/curriculum'
+import { getSections, SUBJECTS, LEVEL_META, OGE_THRESHOLDS } from '../data/curriculum'
 
 // ─── Count-up hook ────────────────────────────────────────────────────────────
 function useCountUp(target, duration = 900) {
@@ -257,7 +257,7 @@ function getTaskStatus(task, completedLevels) {
 const PRIORITY_COLORS = {
   high:   { bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.2)',   dot: '#ef4444' },
   medium: { bg: 'rgba(59,130,246,0.08)',  border: 'rgba(59,130,246,0.2)',  dot: '#3b82f6' },
-  low:    { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)', dot: '#6b7280' },
+  low:    { bg: 'var(--bg-card)', border: 'var(--border)', dot: '#6b7280' },
 }
 
 // ─── Components ───────────────────────────────────────────────────────────────
@@ -280,10 +280,10 @@ function PreparationPlanCard({ plan, completedLevels, navigate, diagnosticData, 
             boxShadow: '0 4px 14px rgba(124,58,237,0.35)',
           }}>🤖</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '14px', fontWeight: '700', color: '#f0f0ff', marginBottom: '2px' }}>
+            <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-1)', marginBottom: '2px' }}>
               Составить план подготовки
             </div>
-            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-2)' }}>
               AI выстроит персональный план по результатам диагностики
             </div>
           </div>
@@ -328,11 +328,11 @@ function PreparationPlanCard({ plan, completedLevels, navigate, diagnosticData, 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '16px' }}>{allDone ? '🏆' : '🤖'}</span>
           <div>
-            <div style={{ fontSize: '14px', fontWeight: '800', color: '#f0f0ff' }}>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-1)' }}>
               {allDone ? 'План выполнен!' : 'План подготовки'}
             </div>
             {createdDate && (
-              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', marginTop: '1px' }}>
+              <div style={{ fontSize: '10px', color: 'var(--text-3)', marginTop: '1px' }}>
                 создан {createdDate}
               </div>
             )}
@@ -342,7 +342,7 @@ function PreparationPlanCard({ plan, completedLevels, navigate, diagnosticData, 
           <div style={{ fontSize: '20px', fontWeight: '900', color: allDone ? '#10b981' : '#a78bfa', lineHeight: 1 }}>
             {doneCount}/{totalCount}
           </div>
-          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>задач</div>
+          <div style={{ fontSize: '10px', color: 'var(--text-3)' }}>задач</div>
         </div>
       </div>
 
@@ -350,8 +350,8 @@ function PreparationPlanCard({ plan, completedLevels, navigate, diagnosticData, 
       {plan.summary && (
         <div style={{
           padding: '10px 12px', borderRadius: '12px', marginBottom: '12px',
-          background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
-          fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5,
+          background: 'var(--bg-card)', border: '1px solid var(--border)',
+          fontSize: '12px', color: 'var(--text-2)', lineHeight: 1.5,
         }}>
           {plan.summary}
         </div>
@@ -359,7 +359,7 @@ function PreparationPlanCard({ plan, completedLevels, navigate, diagnosticData, 
 
       {/* Progress bar */}
       <div style={{ marginBottom: '14px' }}>
-        <div style={{ height: '5px', borderRadius: '5px', background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+        <div style={{ height: '5px', borderRadius: '5px', background: 'var(--border)', overflow: 'hidden' }}>
           <div style={{
             height: '100%', borderRadius: '5px',
             width: `${planPct}%`,
@@ -390,7 +390,7 @@ function PreparationPlanCard({ plan, completedLevels, navigate, diagnosticData, 
               {/* Checkbox */}
               <div style={{
                 width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
-                background: done ? '#10b981' : 'rgba(255,255,255,0.06)',
+                background: done ? '#10b981' : 'var(--bg-card-2)',
                 border: done ? 'none' : `1.5px solid ${p.dot}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
@@ -401,13 +401,13 @@ function PreparationPlanCard({ plan, completedLevels, navigate, diagnosticData, 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
                   fontSize: '12px', fontWeight: '600', lineHeight: 1.4,
-                  color: done ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.85)',
+                  color: done ? 'var(--text-3)' : 'var(--text-1)',
                   textDecoration: done ? 'line-through' : 'none',
                 }}>
                   {task.label}
                 </div>
                 {showProgress && (
-                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--text-3)', marginTop: '2px' }}>
                     {current} из {total} уровней
                   </div>
                 )}
@@ -432,8 +432,8 @@ function PreparationPlanCard({ plan, completedLevels, navigate, diagnosticData, 
         className="tap-scale"
         style={{
           marginTop: '12px', width: '100%', padding: '10px', borderRadius: '12px',
-          background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-          color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+          background: 'var(--bg-card)', border: '1px solid var(--border)',
+          color: 'var(--text-2)', fontSize: '12px', fontWeight: '600', cursor: 'pointer',
         }}
       >
         {allDone ? '🎉 Пройти диагностику снова' : '↻ Обновить план'}
@@ -468,10 +468,10 @@ function EgeScoreCard({ prediction, subject, diagnosticData, accent }) {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
         <div>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.06em' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-2)', letterSpacing: '0.06em' }}>
             ПРОГНОЗ БАЛЛА ЕГЭ
           </div>
-          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', marginTop: '2px' }}>
+          <div style={{ fontSize: '10px', color: 'var(--text-3)', marginTop: '2px' }}>
             задания 1–{appTaskCount} из {primaryMax} первичных · {diagnosticData.done ? 'диагностика учтена · кривая забывания' : 'пройди диагностику для точности'}
           </div>
         </div>
@@ -486,9 +486,9 @@ function EgeScoreCard({ prediction, subject, diagnosticData, accent }) {
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: '14px', marginBottom: '20px' }}>
         <div>
           <div style={{ fontSize: '68px', fontWeight: '900', color: statusColor, lineHeight: 1 }}>{displayScore}</div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>тестовых баллов</div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginTop: '2px' }}>
-            первичный: <strong style={{ color: '#f0f0ff' }}>{primaryRaw}</strong> из {primaryMax}
+          <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>тестовых баллов</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>
+            первичный: <strong style={{ color: 'var(--text-1)' }}>{primaryRaw}</strong> из {primaryMax}
           </div>
         </div>
         {goal && (
@@ -498,7 +498,7 @@ function EgeScoreCard({ prediction, subject, diagnosticData, accent }) {
             border: `1px solid rgba(${hexToRgb(goal.color)},0.2)`,
           }}>
             <div style={{ fontSize: '26px', fontWeight: '900', color: goal.color, lineHeight: 1 }}>+{goal.delta}</div>
-            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '3px', lineHeight: 1.4 }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-2)', marginTop: '3px', lineHeight: 1.4 }}>
               {goal.label}
             </div>
           </div>
@@ -512,7 +512,7 @@ function EgeScoreCard({ prediction, subject, diagnosticData, accent }) {
           <div style={{
             position: 'absolute', left: `${markerPct}%`, top: '-5px',
             width: '20px', height: '20px', borderRadius: '50%',
-            background: '#1a1b2e', border: `3px solid ${statusColor}`,
+            background: 'var(--bg)', border: `3px solid ${statusColor}`,
             transform: 'translateX(-50%)',
             boxShadow: `0 0 12px ${statusColor}88`,
           }} />
@@ -521,17 +521,17 @@ function EgeScoreCard({ prediction, subject, diagnosticData, accent }) {
         {/* Threshold lines */}
         {[thresholds.pass, thresholds.good, thresholds.great].map((t, i) => (
           <div key={t} style={{ position: 'absolute', left: `${t}%`, top: 0, height: '10px',
-            width: '1px', background: 'rgba(255,255,255,0.4)', transform: 'translateX(-50%)' }} />
+            width: '1px', background: 'var(--border-2)', transform: 'translateX(-50%)' }} />
         ))}
       </div>
 
       {/* Threshold labels */}
       <div style={{ position: 'relative', height: '18px' }}>
-        <span style={{ position: 'absolute', left: '0', fontSize: '10px', color: 'rgba(255,255,255,0.25)' }}>0</span>
+        <span style={{ position: 'absolute', left: '0', fontSize: '10px', color: 'var(--text-3)' }}>0</span>
         <span style={{ position: 'absolute', left: `${thresholds.pass}%`, transform: 'translateX(-50%)', fontSize: '10px', fontWeight: '700', color: '#f59e0b' }}>{thresholds.pass}</span>
         <span style={{ position: 'absolute', left: `${thresholds.good}%`, transform: 'translateX(-50%)', fontSize: '10px', fontWeight: '700', color: '#3b82f6' }}>{thresholds.good}</span>
         <span style={{ position: 'absolute', left: `${thresholds.great}%`, transform: 'translateX(-50%)', fontSize: '10px', fontWeight: '700', color: '#10b981' }}>{thresholds.great}</span>
-        <span style={{ position: 'absolute', right: '0', fontSize: '10px', color: 'rgba(255,255,255,0.25)' }}>100</span>
+        <span style={{ position: 'absolute', right: '0', fontSize: '10px', color: 'var(--text-3)' }}>100</span>
       </div>
     </div>
   )
@@ -555,7 +555,7 @@ function OpportunitiesCard({ opportunities, subject, prediction, accent }) {
         }}>⚡</div>
         <div>
           <div style={{ fontSize: '14px', fontWeight: '800' }}>Что прокачать сейчас</div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>задания с наибольшим приростом</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>задания с наибольшим приростом</div>
         </div>
       </div>
 
@@ -567,7 +567,7 @@ function OpportunitiesCard({ opportunities, subject, prediction, accent }) {
             <div key={row.id} style={{
               display: 'flex', alignItems: 'center', gap: '12px',
               padding: '11px 13px', borderRadius: '14px',
-              background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)',
+              background: 'var(--bg-card-2)', border: '1px solid var(--border)',
             }}>
               <div style={{
                 width: '28px', height: '28px', borderRadius: '9px', flexShrink: 0,
@@ -576,17 +576,17 @@ function OpportunitiesCard({ opportunities, subject, prediction, accent }) {
                 fontSize: '11px', fontWeight: '800', color: '#10b981',
               }}>{i + 1}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#f0f0ff',
+                <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-1)',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   №{row.taskNumber} {row.label}
                 </div>
-                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginTop: '2px' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>
                   {pts} {pts === 1 ? 'балл' : pts < 5 ? 'балла' : 'баллов'} первичных · мастерство {row.mastery}%
                 </div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                 <div style={{ fontSize: '15px', fontWeight: '900', color: '#10b981' }}>+{row.testGain}</div>
-                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>тест. балл</div>
+                <div style={{ fontSize: '10px', color: 'var(--text-3)' }}>тест. балл</div>
               </div>
             </div>
           )
@@ -604,13 +604,13 @@ function WeakTopicsCard({ diagnosticData, weakSections, accent, navigate, subjec
   return (
     <div style={{
       borderRadius: '20px', padding: '16px 18px', marginBottom: '12px',
-      background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+      background: 'var(--bg-card)', border: '1px solid var(--border)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
         <div style={{ fontSize: '15px', fontWeight: '800' }}>Слабые темы</div>
         {hasDiag
           ? <span style={{ fontSize: '10px', fontWeight: '700', color: '#a78bfa', padding: '3px 8px', borderRadius: '8px', background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.2)' }}>из диагностики</span>
-          : <span style={{ fontSize: '10px', fontWeight: '700', color: 'rgba(255,255,255,0.3)', padding: '3px 8px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)' }}>по аналитике</span>
+          : <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-3)', padding: '3px 8px', borderRadius: '8px', background: 'var(--bg-card)' }}>по аналитике</span>
         }
       </div>
 
@@ -624,7 +624,7 @@ function WeakTopicsCard({ diagnosticData, weakSections, accent, navigate, subjec
               }}>{t.topic}</span>
             ))}
           </div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>
             Ошибки в диагностике снижают мастерство этих разделов в прогнозе
           </div>
         </div>
@@ -639,10 +639,10 @@ function WeakTopicsCard({ diagnosticData, weakSections, accent, navigate, subjec
               }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.75)' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-1)' }}>
                       №{row.taskNumber} {row.label}
                     </span>
-                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', flexShrink: 0, marginLeft: '8px' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text-3)', flexShrink: 0, marginLeft: '8px' }}>
                       {pts} {pts < 2 ? 'балл' : 'балла'} · мастерство {row.mastery}%
                     </span>
                   </div>
@@ -669,7 +669,7 @@ function WeakTopicsCard({ diagnosticData, weakSections, accent, navigate, subjec
 function AnimatedBar({ mastery, accent, delay }) {
   const width = useAnimatedWidth(mastery, delay)
   return (
-    <div style={{ height: '4px', borderRadius: '4px', background: 'rgba(255,255,255,0.06)' }}>
+    <div style={{ height: '4px', borderRadius: '4px', background: 'var(--border)' }}>
       <div style={{
         height: '100%', borderRadius: '4px', width: `${width}%`,
         background: mastery === 100
@@ -686,7 +686,7 @@ function SectionBars({ breakdown, accent }) {
   return (
     <div style={{
       borderRadius: '20px', padding: '16px 18px', marginBottom: '12px',
-      background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+      background: 'var(--bg-card)', border: '1px solid var(--border)',
     }}>
       <div style={{ fontSize: '15px', fontWeight: '800', marginBottom: '14px' }}>Разделы</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -695,7 +695,7 @@ function SectionBars({ breakdown, accent }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                 <span style={{ fontSize: '13px', flexShrink: 0 }}>{section.emoji}</span>
-                <span style={{ fontSize: '12px', fontWeight: '600', color: 'rgba(255,255,255,0.7)',
+                <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-1)',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   №{section.taskNumber} {section.label}
                 </span>
@@ -708,7 +708,7 @@ function SectionBars({ breakdown, accent }) {
                   </span>
                 )}
                 <span style={{ fontSize: '11px', fontWeight: '800',
-                  color: section.mastery === 100 ? '#10b981' : section.mastery > 0 ? accent : 'rgba(255,255,255,0.2)' }}>
+                  color: section.mastery === 100 ? '#10b981' : section.mastery > 0 ? accent : 'var(--text-3)' }}>
                   {section.mastery}%
                 </span>
               </div>
@@ -725,7 +725,7 @@ function StatsRow({ streak, totalXp, totalCompleted, totalLevels, accent }) {
   return (
     <div style={{
       borderRadius: '18px', overflow: 'hidden', marginBottom: '12px',
-      background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex',
+      background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex',
     }}>
       {[
         { icon: '🔥', value: streak, label: 'дней в ударе', color: '#f97316' },
@@ -734,11 +734,11 @@ function StatsRow({ streak, totalXp, totalCompleted, totalLevels, accent }) {
       ].map((s, i) => (
         <div key={i} style={{
           flex: 1, padding: '14px 8px', textAlign: 'center',
-          borderRight: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+          borderRight: i < 2 ? '1px solid var(--border)' : 'none',
         }}>
           <div style={{ fontSize: '18px', marginBottom: '4px' }}>{s.icon}</div>
           <div style={{ fontSize: '17px', fontWeight: '900', color: s.color, lineHeight: 1 }}>{s.value}</div>
-          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', marginTop: '3px' }}>{s.label}</div>
+          <div style={{ fontSize: '10px', color: 'var(--text-3)', marginTop: '3px' }}>{s.label}</div>
         </div>
       ))}
     </div>
@@ -749,7 +749,7 @@ function WeekActivity({ days, lastActiveDate }) {
   return (
     <div style={{
       borderRadius: '20px', padding: '16px 18px', marginBottom: '12px',
-      background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+      background: 'var(--bg-card)', border: '1px solid var(--border)',
     }}>
       <div style={{ fontSize: '15px', fontWeight: '800', marginBottom: '14px' }}>Активность недели</div>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -760,14 +760,14 @@ function WeekActivity({ days, lastActiveDate }) {
             <div key={date} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
               <div style={{
                 width: '36px', height: '36px', borderRadius: '12px',
-                background: isActive ? 'linear-gradient(135deg,#3b82f6,#7c3aed)' : isToday ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.04)',
-                border: isToday && !isActive ? '1px solid rgba(59,130,246,0.25)' : '1px solid rgba(255,255,255,0.05)',
+                background: isActive ? 'linear-gradient(135deg,#3b82f6,#7c3aed)' : isToday ? 'rgba(59,130,246,0.1)' : 'var(--bg-card-2)',
+                border: isToday && !isActive ? '1px solid rgba(59,130,246,0.25)' : '1px solid var(--border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px',
                 boxShadow: isActive ? '0 4px 14px rgba(59,130,246,0.35)' : 'none',
               }}>
                 {isActive ? '✓' : ''}
               </div>
-              <span style={{ fontSize: '10px', color: isActive ? '#60a5fa' : 'rgba(255,255,255,0.3)', fontWeight: isActive ? '700' : '500' }}>
+              <span style={{ fontSize: '10px', color: isActive ? '#60a5fa' : 'var(--text-3)', fontWeight: isActive ? '700' : '500' }}>
                 {label}
               </span>
             </div>
@@ -778,14 +778,141 @@ function WeekActivity({ days, lastActiveDate }) {
   )
 }
 
+// ─── OGE Grade Card ───────────────────────────────────────────────────────────
+function OgeGradeCard({ ogeData, subject, accent }) {
+  if (!ogeData) return null
+  const { earnedPoints, maxPoints, grade, nextGrade } = ogeData
+  const threshData = OGE_THRESHOLDS[subject] ?? OGE_THRESHOLDS.math
+
+  const gradeColor = { 2: '#ef4444', 3: '#f59e0b', 4: '#3b82f6', 5: '#10b981' }
+  const color = gradeColor[grade] ?? accent
+
+  // Build scale: 0 → grade3.min → grade4.min → grade5.min → max
+  const sorted = [...threshData.thresholds].sort((a, b) => a.min - b.min)
+  const max = threshData.max
+
+  const barWidth = useAnimatedWidth(Math.round((earnedPoints / max) * 100), 0)
+
+  return (
+    <div style={{
+      borderRadius: '22px', padding: '20px', marginBottom: '12px',
+      background: `linear-gradient(135deg, ${color}1a, ${color}0a)`,
+      border: `1px solid ${color}44`,
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-2)', letterSpacing: '0.06em' }}>
+            ПРОГНОЗ ОЦЕНКИ ОГЭ
+          </div>
+          <div style={{ fontSize: '10px', color: 'var(--text-3)', marginTop: '2px' }}>
+            {earnedPoints} из {maxPoints} первичных баллов (задания в приложении)
+          </div>
+        </div>
+        <div style={{
+          width: '52px', height: '52px', borderRadius: '16px', flexShrink: 0,
+          background: `linear-gradient(135deg, ${color}, ${color}99)`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: `0 6px 20px ${color}44`,
+        }}>
+          <span style={{ fontSize: '28px', fontWeight: '900', color: '#fff', lineHeight: 1 }}>{grade}</span>
+        </div>
+      </div>
+
+      {/* Points progress bar */}
+      <div style={{ marginBottom: '18px' }}>
+        <div style={{ height: '8px', borderRadius: '8px', background: 'var(--border)', overflow: 'hidden', position: 'relative' }}>
+          <div style={{
+            height: '100%', borderRadius: '8px',
+            width: `${barWidth}%`,
+            background: `linear-gradient(90deg, ${color}, ${color}99)`,
+            boxShadow: `0 0 8px ${color}55`,
+            transition: 'width 0.7s cubic-bezier(0.34,1.2,0.64,1)',
+          }} />
+        </div>
+      </div>
+
+      {/* Grade scale */}
+      <div style={{ position: 'relative', marginBottom: '8px' }}>
+        {/* Track */}
+        <div style={{ height: '4px', borderRadius: '4px', background: 'var(--border)' }}>
+          <div style={{
+            height: '100%', borderRadius: '4px',
+            background: 'linear-gradient(90deg, #ef4444 0%, #f59e0b 30%, #3b82f6 65%, #10b981 100%)',
+          }} />
+        </div>
+
+        {/* Threshold ticks */}
+        {sorted.map(({ min }) => (
+          <div key={min} style={{
+            position: 'absolute', left: `${(min / max) * 100}%`, top: '-3px',
+            width: '1px', height: '10px', background: 'var(--border-2)',
+            transform: 'translateX(-50%)',
+          }} />
+        ))}
+
+        {/* Current position dot */}
+        <div style={{
+          position: 'absolute',
+          left: `${Math.min(98, Math.max(2, (earnedPoints / max) * 100))}%`,
+          top: '-8px',
+          width: '20px', height: '20px', borderRadius: '50%',
+          background: 'var(--bg)', border: `3px solid ${color}`,
+          transform: 'translateX(-50%)',
+          boxShadow: `0 0 10px ${color}88`,
+        }} />
+      </div>
+
+      {/* Grade labels */}
+      <div style={{ position: 'relative', height: '20px', marginBottom: '16px' }}>
+        <span style={{ position: 'absolute', left: '0', fontSize: '10px', color: 'var(--text-3)' }}>0</span>
+        {sorted.map(({ grade: g, min }) => (
+          <span key={g} style={{
+            position: 'absolute', left: `${(min / max) * 100}%`,
+            transform: 'translateX(-50%)', fontSize: '10px', fontWeight: '800',
+            color: gradeColor[g] ?? accent,
+          }}>{g}</span>
+        ))}
+        <span style={{ position: 'absolute', right: '0', fontSize: '10px', color: 'var(--text-3)' }}>{max}</span>
+      </div>
+
+      {/* Next grade hint */}
+      {nextGrade ? (
+        <div style={{
+          padding: '10px 14px', borderRadius: '14px',
+          background: `rgba(${hexToRgb(gradeColor[nextGrade.grade] ?? accent)},0.1)`,
+          border: `1px solid rgba(${hexToRgb(gradeColor[nextGrade.grade] ?? accent)},0.2)`,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-2)' }}>
+            До оценки <strong style={{ color: gradeColor[nextGrade.grade] }}>{nextGrade.grade}</strong>
+          </span>
+          <span style={{ fontSize: '16px', fontWeight: '900', color: gradeColor[nextGrade.grade] ?? accent }}>
+            ещё {nextGrade.need} {nextGrade.need === 1 ? 'балл' : nextGrade.need < 5 ? 'балла' : 'баллов'}
+          </span>
+        </div>
+      ) : (
+        <div style={{
+          padding: '10px 14px', borderRadius: '14px', textAlign: 'center',
+          background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)',
+          fontSize: '13px', fontWeight: '700', color: '#10b981',
+        }}>
+          🏆 Максимальный балл за все разделы!
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Progress() {
   const navigate = useNavigate()
-  const { progress, getTotalProgress, getSectionProgress, diagnosticData, planData } = useProgress()
+  const { progress, getTotalProgress, getSectionProgress, diagnosticData, planData, ogeData } = useProgress()
 
   if (!progress) { navigate('/onboarding'); return null }
 
-  const sections = getSections(progress.subject)
+  const isOge = progress.exam === 'oge'
+  const sections = getSections(progress.subject, progress.exam)
   const accent = SUBJECT_ACCENT[progress.subject] ?? '#7c3aed'
   const subjectInfo = SUBJECTS.find(s => s.id === progress.subject)
   const days = getLast7Days()
@@ -799,7 +926,7 @@ export default function Progress() {
   const totalLevels = sections.length * LEVEL_META.length
 
   return (
-    <div className="page-enter" style={{ height: '100%', overflowY: 'auto', background: '#0d0f14', color: '#f0f0ff' }}>
+    <div className="page-enter" style={{ height: '100%', overflowY: 'auto', background: 'var(--bg)', color: 'var(--text-1)' }}>
       <div className="stagger" style={{ padding: '16px 18px 32px' }}>
 
         {/* Header */}
@@ -812,19 +939,24 @@ export default function Progress() {
             }}>{subjectInfo?.emoji} {subjectInfo?.label}</span>
             <span style={{
               padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: '700',
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', color: 'rgba(255,255,255,0.45)',
+              background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-2)',
             }}>{progress.exam?.toUpperCase()}</span>
-            <span style={{
-              padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: '700',
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', color: 'rgba(255,255,255,0.45)',
-            }}>задания 1–{prediction.appTaskCount} в приложении</span>
+            {!isOge && (
+              <span style={{
+                padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: '700',
+                background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-2)',
+              }}>задания 1–{prediction.appTaskCount} в приложении</span>
+            )}
           </div>
         </div>
 
-        <EgeScoreCard prediction={prediction} subject={progress.subject} diagnosticData={diagnosticData} accent={accent} />
+        {isOge
+          ? <OgeGradeCard ogeData={ogeData} subject={progress.subject} accent={accent} />
+          : <EgeScoreCard prediction={prediction} subject={progress.subject} diagnosticData={diagnosticData} accent={accent} />
+        }
         <StatsRow streak={progress.streak} totalXp={progress.totalXp} totalCompleted={totalCompleted} totalLevels={totalLevels} accent={accent} />
         <PreparationPlanCard plan={planData} completedLevels={progress.completedLevels} navigate={navigate} diagnosticData={diagnosticData} accent={accent} />
-        <OpportunitiesCard opportunities={prediction.opportunities} subject={progress.subject} prediction={prediction} accent={accent} />
+        {!isOge && <OpportunitiesCard opportunities={prediction.opportunities} subject={progress.subject} prediction={prediction} accent={accent} />}
         <WeakTopicsCard diagnosticData={diagnosticData} weakSections={prediction.weakSections} accent={accent} navigate={navigate} subject={progress.subject} />
         <WeekActivity days={days} lastActiveDate={progress.lastActiveDate} />
         <SectionBars breakdown={prediction.breakdown} accent={accent} />

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProgress } from '../hooks/useProgress'
-import { DIAGNOSTIC, getMockAIRecommendation } from '../data/diagnosticData'
+import { DIAGNOSTIC, OGE_DIAGNOSTIC, getMockAIRecommendation } from '../data/diagnosticData'
 import { SUBJECTS, getSections } from '../data/curriculum'
 
 const OPENAI_KEY = import.meta.env.VITE_OPENAI_KEY
@@ -77,16 +77,16 @@ function IntroScreen({ subject, subjectInfo, accent, onStart, onSkip }) {
       }}>
         {subjectInfo?.emoji ?? '📝'}
       </div>
-      <h1 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '10px', color: '#f0f0ff' }}>
+      <h1 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '10px', color: 'var(--text-1)' }}>
         Диагностика
       </h1>
-      <p style={{ fontSize: '15px', color: '#a0a0b8', lineHeight: '1.6', marginBottom: '32px', maxWidth: '280px' }}>
-        Пройди короткий тест по <strong style={{ color: '#f0f0ff' }}>{subjectInfo?.label}</strong> — узнаем твой уровень и что стоит подтянуть
+      <p style={{ fontSize: '15px', color: 'var(--text-2)', lineHeight: '1.6', marginBottom: '32px', maxWidth: '280px' }}>
+        Пройди короткий тест по <strong style={{ color: 'var(--text-1)' }}>{subjectInfo?.label}</strong> — узнаем твой уровень и что стоит подтянуть
       </p>
 
       <div style={{
         width: '100%', borderRadius: '18px', padding: '16px 18px', marginBottom: '28px',
-        background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+        background: 'var(--bg-card)', border: '1px solid var(--border)',
         display: 'flex', flexDirection: 'column', gap: '12px',
       }}>
         {[
@@ -96,7 +96,7 @@ function IntroScreen({ subject, subjectInfo, accent, onStart, onSkip }) {
         ].map(({ icon, text }) => (
           <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontSize: '18px' }}>{icon}</span>
-            <span style={{ fontSize: '13px', color: '#a0a0b8' }}>{text}</span>
+            <span style={{ fontSize: '13px', color: 'var(--text-2)' }}>{text}</span>
           </div>
         ))}
       </div>
@@ -113,7 +113,7 @@ function IntroScreen({ subject, subjectInfo, accent, onStart, onSkip }) {
 
       <button onClick={onSkip} style={{
         marginTop: '14px', background: 'none', border: 'none',
-        color: 'rgba(255,255,255,0.3)', fontSize: '13px', cursor: 'pointer',
+        color: 'var(--text-3)', fontSize: '13px', cursor: 'pointer',
       }}>
         Пропустить
       </button>
@@ -152,10 +152,10 @@ function QuizScreen({ questions, accent, onFinish }) {
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
-        <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', fontWeight: '600' }}>
+        <span style={{ fontSize: '12px', color: 'var(--text-3)', fontWeight: '600' }}>
           {current + 1} / {questions.length}
         </span>
-        <div style={{ flex: 1, height: '4px', borderRadius: '4px', background: 'rgba(255,255,255,0.06)' }}>
+        <div style={{ flex: 1, height: '4px', borderRadius: '4px', background: 'var(--border)' }}>
           <div style={{
             height: '100%', borderRadius: '4px',
             width: `${progress}%`,
@@ -176,9 +176,9 @@ function QuizScreen({ questions, accent, onFinish }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{
           borderRadius: '20px', padding: '20px 18px', marginBottom: '16px',
-          background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--bg-card)', border: '1px solid var(--border)',
         }}>
-          <p style={{ fontSize: '15px', lineHeight: '1.65', color: '#f0f0ff', whiteSpace: 'pre-wrap' }}>
+          <p style={{ fontSize: '15px', lineHeight: '1.65', color: 'var(--text-1)', whiteSpace: 'pre-wrap' }}>
             {q.text}
           </p>
         </div>
@@ -186,9 +186,9 @@ function QuizScreen({ questions, accent, onFinish }) {
         {/* Options */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {q.options.map((opt, i) => {
-            let bg = 'rgba(255,255,255,0.04)'
-            let border = '1px solid rgba(255,255,255,0.08)'
-            let color = '#e0e0f0'
+            let bg = 'var(--bg-card)'
+            let border = '1px solid var(--border)'
+            let color = 'var(--text-1)'
 
             if (isAnswered) {
               if (i === q.correct) {
@@ -219,7 +219,7 @@ function QuizScreen({ questions, accent, onFinish }) {
                       ? 'rgba(239,68,68,0.15)'
                       : i === selected
                         ? `${accent}33`
-                        : 'rgba(255,255,255,0.06)',
+                        : 'var(--bg-card-2)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '11px', fontWeight: '700', color: 'inherit',
                 }}>
@@ -287,12 +287,12 @@ function ResultsScreen({ answers, accent, subject, onContinue, onMakePlan }) {
         <div style={{ fontSize: '52px', fontWeight: '900', color: scoreColor, lineHeight: 1 }}>
           {scorePct}%
         </div>
-        <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginTop: '6px' }}>
+        <div style={{ fontSize: '14px', color: 'var(--text-3)', marginTop: '6px' }}>
           {correct} из {total} правильных ответов
         </div>
         <div style={{
           marginTop: '12px', fontSize: '16px', fontWeight: '700',
-          color: scorePct >= 70 ? '#10b981' : scorePct >= 40 ? '#f0f0ff' : '#f59e0b',
+          color: scorePct >= 70 ? '#10b981' : scorePct >= 40 ? 'var(--text-1)' : '#f59e0b',
         }}>
           {scorePct === 100 ? '🏆 Отлично!' : scorePct >= 70 ? '🎯 Хороший результат!' : scorePct >= 40 ? '📚 Есть потенциал' : '🌱 Начало пути'}
         </div>
@@ -322,7 +322,7 @@ function ResultsScreen({ answers, accent, subject, onContinue, onMakePlan }) {
       {/* Weak topics */}
       {weak.length > 0 && (
         <div style={{ marginBottom: '14px' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.07em', marginBottom: '8px' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-3)', letterSpacing: '0.07em', marginBottom: '8px' }}>
             НУЖНО ПОДТЯНУТЬ ({weak.length})
           </div>
           <div style={{
@@ -345,7 +345,7 @@ function ResultsScreen({ answers, accent, subject, onContinue, onMakePlan }) {
       {/* Strong topics */}
       {strong.length > 0 && (
         <div style={{ marginBottom: '20px' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.07em', marginBottom: '8px' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-3)', letterSpacing: '0.07em', marginBottom: '8px' }}>
             УЖЕ ЗНАЕШЬ ({strong.length})
           </div>
           <div style={{
@@ -404,9 +404,9 @@ function ResultsScreen({ answers, accent, subject, onContinue, onMakePlan }) {
 
       <button onClick={() => onContinue(scorePct, weak, strong)} style={{
         width: '100%', padding: '14px', borderRadius: '16px',
-        border: '1px solid rgba(255,255,255,0.1)',
-        background: 'rgba(255,255,255,0.04)',
-        color: 'rgba(255,255,255,0.6)', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+        border: '1px solid var(--border)',
+        background: 'var(--bg-card)',
+        color: 'var(--text-2)', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
       }}>
         Начать без плана →
       </button>
@@ -428,7 +428,8 @@ export default function DiagnosticTest() {
   const subject = progress.subject
   const accent = SUBJECT_ACCENT[subject] ?? '#7c3aed'
   const subjectInfo = SUBJECTS.find(s => s.id === subject)
-  const questions = DIAGNOSTIC[subject] ?? []
+  const isOge = progress.exam === 'oge'
+  const questions = (isOge ? OGE_DIAGNOSTIC[subject] : DIAGNOSTIC[subject]) ?? []
 
   const handleFinishQuiz = (ans) => {
     setAnswers(ans)
@@ -442,7 +443,7 @@ export default function DiagnosticTest() {
 
   const handleMakePlan = async (score, weak, strong) => {
     saveDiagnostic(score, weak, strong)
-    const sections = getSections(subject)
+    const sections = getSections(subject, progress.exam)
     const plan = await generatePlan(subject, subjectInfo?.label ?? subject, score, weak, strong, sections)
     savePlan(plan)
     navigate('/progress')
@@ -454,15 +455,15 @@ export default function DiagnosticTest() {
 
   if (screen === SCREEN.QUIZ) {
     return (
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#0d0f14', color: '#f0f0ff' }}>
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)', color: 'var(--text-1)' }}>
         {/* Header */}
         <div style={{
           padding: '12px 18px 10px', flexShrink: 0,
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          borderBottom: '1px solid var(--border)',
           display: 'flex', alignItems: 'center', gap: '12px',
         }}>
           <button onClick={() => setScreen(SCREEN.INTRO)} style={{
-            background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '20px', lineHeight: 1,
+            background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', fontSize: '20px', lineHeight: 1,
           }}>←</button>
           <span style={{ fontSize: '15px', fontWeight: '700' }}>Диагностика</span>
           <div style={{
@@ -480,11 +481,11 @@ export default function DiagnosticTest() {
   }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#0d0f14', color: '#f0f0ff' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)', color: 'var(--text-1)' }}>
       {/* Header */}
       <div style={{
         padding: '12px 18px 10px', flexShrink: 0,
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        borderBottom: '1px solid var(--border)',
         display: 'flex', alignItems: 'center', gap: '12px',
       }}>
         <span style={{ fontSize: '15px', fontWeight: '700' }}>Результаты диагностики</span>
