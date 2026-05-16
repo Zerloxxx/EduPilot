@@ -7,6 +7,19 @@ import SubjectSwitcher from '../components/SubjectSwitcher'
 
 const SUBJECT_ACCENT = { cs: '#10b981', math: '#7c3aed', russian: '#3b82f6' }
 
+const DATE_PRESETS = {
+  ege: {
+    russian: [{ label: '27 мая', value: '2026-05-27' }, { label: '3 июня', value: '2026-06-03' }],
+    math:    [{ label: '5 июня', value: '2026-06-05' }, { label: '9 июня', value: '2026-06-09' }],
+    cs:      [{ label: '10 июня', value: '2026-06-10' }, { label: '16 июня', value: '2026-06-16' }],
+  },
+  oge: {
+    russian: [{ label: '29 мая', value: '2026-05-29' }, { label: '4 июня', value: '2026-06-04' }],
+    math:    [{ label: '28 мая', value: '2026-05-28' }, { label: '3 июня', value: '2026-06-03' }],
+    cs:      [{ label: '3 июня', value: '2026-06-03' }, { label: '9 июня', value: '2026-06-09' }],
+  },
+}
+
 function plural(n, one, few, many) {
   if (n % 10 === 1 && n % 100 !== 11) return one
   if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return few
@@ -49,6 +62,181 @@ function ThemeToggle() {
     }}>
       {theme === 'dark' ? '☀️' : '🌙'}
     </button>
+  )
+}
+
+// ─── First visit sheet (new subject) ─────────────────────────────────────────
+function FirstVisitSheet({ exam, subject, subjectInfo, accent, setExamDate, onStartDiagnostic, onSkip }) {
+  const [selectedDate, setSelectedDate] = useState(null)
+  const [showCustom, setShowCustom] = useState(false)
+  const [customDate, setCustomDate] = useState('')
+  const presets = DATE_PRESETS[exam]?.[subject] ?? []
+  const examLabel = exam === 'oge' ? 'ОГЭ' : 'ЕГЭ'
+
+  const getDate = () => showCustom ? (customDate || null) : selectedDate
+
+  const handleStart = () => {
+    const date = getDate()
+    if (date) setExamDate(date)
+    onStartDiagnostic()
+  }
+
+  const handleSkip = () => {
+    const date = getDate()
+    if (date) setExamDate(date)
+    onSkip()
+  }
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div onClick={handleSkip} style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200,
+        backdropFilter: 'blur(4px)',
+      }} />
+
+      {/* Sheet */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 201,
+        background: 'var(--bg)', borderRadius: '24px 24px 0 0',
+        border: '1px solid var(--border)', borderBottom: 'none',
+        padding: '8px 20px 36px',
+        animation: 'slideUp 0.3s cubic-bezier(0.34,1.2,0.64,1)',
+      }}>
+        {/* Handle */}
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border-2)', margin: '12px auto 20px' }} />
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+            background: `${accent}20`, border: `1px solid ${accent}33`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+          }}>{subjectInfo?.emoji}</div>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>
+              {subjectInfo?.label} — первый раз!
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
+              Укажи дату {examLabel}, чтобы видеть обратный отсчёт
+            </div>
+          </div>
+        </div>
+
+        {/* Date presets */}
+        {!showCustom && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+            {presets.map(({ label, value }) => (
+              <button key={value} onClick={() => setSelectedDate(value)} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '14px 16px', borderRadius: 14, cursor: 'pointer',
+                border: selectedDate === value ? '1.5px solid rgba(168,85,247,0.6)' : '1px solid var(--border)',
+                background: selectedDate === value ? 'rgba(124,58,237,0.12)' : 'var(--bg-card)',
+                transition: 'all 0.2s',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 16 }}>📅</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: selectedDate === value ? '#a855f7' : 'var(--text-1)' }}>
+                    {label} 2026
+                  </span>
+                </div>
+                {selectedDate === value && <span style={{ color: '#a855f7' }}>✓</span>}
+              </button>
+            ))}
+            <button onClick={() => { setShowCustom(true); setSelectedDate(null) }} style={{
+              padding: '12px 16px', borderRadius: 14, cursor: 'pointer',
+              border: '1px solid var(--border)', background: 'var(--bg-card)',
+              fontSize: 13, fontWeight: 600, color: 'var(--text-2)', textAlign: 'left',
+            }}>
+              📆 Другая дата...
+            </button>
+          </div>
+        )}
+
+        {/* Custom date */}
+        {showCustom && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ padding: '14px 16px', borderRadius: 14, background: 'var(--bg-card)', border: '1.5px solid rgba(168,85,247,0.35)' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8 }}>Дата экзамена:</div>
+              <input type="date" value={customDate} min="2026-01-01" max="2026-12-31"
+                onChange={e => setCustomDate(e.target.value)}
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 10,
+                  border: '1px solid var(--border)', background: 'var(--bg)',
+                  color: 'var(--text-1)', fontSize: 15, outline: 'none', boxSizing: 'border-box',
+                }} />
+            </div>
+            <button onClick={() => { setShowCustom(false); setCustomDate('') }}
+              style={{ marginTop: 6, background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--text-3)' }}>
+              ← Назад
+            </button>
+          </div>
+        )}
+
+        {/* Actions */}
+        <button onClick={handleStart} className="btn-primary" style={{ marginBottom: 10 }}>
+          🎯 Начать диагностику
+        </button>
+        <button onClick={handleSkip} style={{
+          width: '100%', padding: '12px', background: 'none', border: 'none',
+          cursor: 'pointer', fontSize: 13, color: 'var(--text-3)', fontWeight: 600,
+        }}>
+          Пропустить
+        </button>
+      </div>
+    </>
+  )
+}
+
+// ─── Exam countdown ───────────────────────────────────────────────────────────
+function ExamCountdown({ daysLeft, exam }) {
+  if (daysLeft === null) return null
+  const examLabel = exam === 'oge' ? 'ОГЭ' : 'ЕГЭ'
+
+  let color, bg, border, hint
+  if (daysLeft <= 14) {
+    color = '#ef4444'; bg = 'rgba(239,68,68,0.1)'; border = 'rgba(239,68,68,0.25)'
+    hint = 'Финальный рывок! Повтори слабые темы'
+  } else if (daysLeft <= 30) {
+    color = '#f97316'; bg = 'rgba(249,115,22,0.1)'; border = 'rgba(249,115,22,0.25)'
+    hint = 'Горячая пора — интенсивная подготовка'
+  } else if (daysLeft <= 60) {
+    color = '#f59e0b'; bg = 'rgba(245,158,11,0.1)'; border = 'rgba(245,158,11,0.25)'
+    hint = 'Осталось немного, держи темп'
+  } else {
+    color = '#3b82f6'; bg = 'rgba(59,130,246,0.08)'; border = 'rgba(59,130,246,0.2)'
+    hint = 'Времени достаточно, занимайся системно'
+  }
+
+  const dayWord = daysLeft % 10 === 1 && daysLeft % 100 !== 11 ? 'день'
+    : [2,3,4].includes(daysLeft % 10) && ![12,13,14].includes(daysLeft % 100) ? 'дня'
+    : 'дней'
+
+  return (
+    <div style={{ padding: '0 18px 10px', flexShrink: 0 }}>
+      <div style={{
+        borderRadius: 18, padding: '13px 16px', background: bg,
+        border: `1px solid ${border}`, display: 'flex', alignItems: 'center', gap: 12,
+        boxShadow: 'var(--card-shadow)',
+      }}>
+        <div style={{
+          width: 42, height: 42, borderRadius: 13, flexShrink: 0,
+          background: `${color}20`, border: `1px solid ${color}40`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+        }}>📅</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)', marginBottom: 2 }}>
+            До {examLabel}:{' '}
+            <span style={{ color }}>{daysLeft} {dayWord}</span>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{hint}</div>
+        </div>
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 28, fontWeight: 900, color, lineHeight: 1 }}>{daysLeft}</div>
+          <div style={{ fontSize: 9, color: 'var(--text-3)', marginTop: 1 }}>{dayWord}</div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -126,10 +314,12 @@ function LevelCard({ meta, status, accent, hasDraft, onPress }) {
 export default function HomeCS() {
   const navigate = useNavigate()
   const { theme } = useTheme()
-  const { progress, getLevelStatus, getSectionProgress, switchSubject, diagnosticData, energyData, dueReviews, ogeData } = useProgress()
+  const { progress, getLevelStatus, getSectionProgress, switchSubject, diagnosticData, energyData, dueReviews, ogeData, daysLeft, examDate, setExamDate } = useProgress()
   const [activeSectionIdx, setActiveSectionIdx] = useState(0)
   const [dragOffset, setDragOffset] = useState(0)
   const [showSwitcher, setShowSwitcher] = useState(false)
+  // показываем шторку первого визита: дата не задана и диагностика ещё не пройдена
+  const [showFirstVisit, setShowFirstVisit] = useState(false)
   const tabsRef = useRef(null)
   const carouselRef = useRef(null)
   const sectionsCountRef = useRef(1)
@@ -192,6 +382,15 @@ export default function HomeCS() {
   useEffect(() => {
     if (!progress) navigate('/onboarding', { replace: true })
   }, [progress, navigate])
+
+  // Открываем шторку при первом визите на предмет (нет даты + нет диагностики)
+  useEffect(() => {
+    if (progress && !diagnosticData.done && !examDate) {
+      setShowFirstVisit(true)
+    } else {
+      setShowFirstVisit(false)
+    }
+  }, [progress?.subject]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!progress) return null
 
@@ -263,6 +462,9 @@ export default function HomeCS() {
         </div>
       </div>
 
+      {/* ── Exam countdown ─────────────────────────────────────────────── */}
+      <ExamCountdown daysLeft={daysLeft} exam={progress.exam} />
+
       {/* ── OGE grade card ─────────────────────────────────────────────── */}
       {ogeData && (
         <div style={{ padding: '0 18px 10px', flexShrink: 0 }}>
@@ -309,6 +511,27 @@ export default function HomeCS() {
           </div>
         </div>
       )}
+
+      {/* ── Exam simulation entry ──────────────────────────────────────── */}
+      {(() => {
+        const examKey = `${progress.exam}_${subject}`
+        return (
+          <div style={{ padding: '0 18px 10px', flexShrink: 0 }}>
+            <div className="tap-scale" onClick={() => navigate(`/exam-sim/${examKey}`)} style={{
+              borderRadius: 18, padding: '13px 16px',
+              background: `${accent}10`, border: `1px solid ${accent}33`,
+              display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', boxShadow: 'var(--card-shadow)',
+            }}>
+              <div style={{ width: 42, height: 42, borderRadius: 13, flexShrink: 0, background: `linear-gradient(135deg, ${accent}, ${accent}cc)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, boxShadow: `0 4px 12px ${accent}44` }}>📝</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)', marginBottom: 2 }}>Пробный экзамен · Часть 1</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Проверь себя в условиях реального экзамена</div>
+              </div>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── Section tabs ───────────────────────────────────────────────── */}
       <div style={{ paddingBottom: 12, flexShrink: 0 }}>
@@ -444,6 +667,19 @@ export default function HomeCS() {
           currentSubject={progress.subject}
           onSelect={(s) => { if (s !== progress.subject) { switchSubject(s); setActiveSectionIdx(0) } setShowSwitcher(false) }}
           onClose={() => setShowSwitcher(false)}
+        />
+      )}
+
+      {/* ── First visit sheet ──────────────────────────────────────────── */}
+      {showFirstVisit && (
+        <FirstVisitSheet
+          exam={progress.exam}
+          subject={subject}
+          subjectInfo={subjectInfo}
+          accent={accent}
+          setExamDate={setExamDate}
+          onStartDiagnostic={() => { setShowFirstVisit(false); navigate('/diagnostic') }}
+          onSkip={() => setShowFirstVisit(false)}
         />
       )}
     </div>

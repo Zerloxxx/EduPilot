@@ -81,6 +81,12 @@ function buildSystemPrompt(ctx, exam, subject) {
 
 Текущий контекст: ${examName}, ${subjectName}.
 
+🚫 СТРОГОЕ ОГРАНИЧЕНИЕ ТЕМАТИКИ:
+Ты отвечаешь ТОЛЬКО на вопросы, связанные с учёбой и подготовкой к экзаменам (${examName}, ${subjectName} и смежные школьные предметы).
+Если вопрос НЕ относится к учёбе, подготовке к экзаменам или школьным предметам — вежливо, но твёрдо откажи и перенаправь на учёбу.
+Примеры запрещённых тем: цены на товары, новости, развлечения, знаменитости, советы по жизни, программирование не по программе, любые темы не из школьной программы.
+Формула отказа: «Я могу помочь только с подготовкой к экзамену 😊 Если есть вопросы по [предмет] — спрашивай!»
+
 Правила общения:
 - Отвечай ТОЛЬКО на русском языке
 - Говори дружелюбно, как живой репетитор для подростка ${exam === 'oge' ? '13–15' : '15–17'} лет
@@ -250,9 +256,9 @@ function ContextCard({ taskContext }) {
         </span>
       </div>
       <div style={{ padding: '12px 14px 10px' }}>
-        <p style={{ fontSize: '13px', color: 'var(--text-1)', lineHeight: 1.55, marginBottom: '10px' }}>
-          {taskContext.taskText}
-        </p>
+        <div style={{ fontSize: '13px', color: 'var(--text-1)', lineHeight: 1.55, marginBottom: '10px' }}>
+          <MathMessage text={taskContext.taskText} />
+        </div>
         {taskContext.userAnswer && (
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '6px',
@@ -273,6 +279,7 @@ function ContextCard({ taskContext }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Chat() {
+  const navigate = useNavigate()
   const { progress } = useProgress()
   const subject = progress?.subject ?? 'cs'
   const exam    = progress?.exam    ?? 'ege'
@@ -407,6 +414,7 @@ export default function Chat() {
   const hasTaskContext = activeMeta.context != null
   const quickPrompts  = hasTaskContext ? QUICK_TASK : QUICK_DEFAULT
   const threadCount   = Object.keys(threadIndex).length
+  const returnPath    = activeMeta.context?.returnPath ?? null
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -419,6 +427,22 @@ export default function Chat() {
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {returnPath && (
+            <button
+              onClick={() => navigate(returnPath)}
+              className="tap-scale"
+              style={{
+                width: '36px', height: '36px', borderRadius: '12px', flexShrink: 0,
+                background: 'var(--bg-card)', border: '1px solid var(--border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M15 18l-6-6 6-6" stroke="var(--text-2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          )}
           <div style={{
             width: '38px', height: '38px', borderRadius: '13px', flexShrink: 0,
             background: 'linear-gradient(135deg, #7c3aed, #3b82f6)',

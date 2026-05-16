@@ -1,7 +1,45 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react'
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProgress } from '../hooks/useProgress'
 import { getSections, SUBJECTS, LEVEL_META, OGE_THRESHOLDS } from '../data/curriculum'
+
+const OPENAI_KEY = import.meta.env.VITE_OPENAI_KEY
+const MODEL = 'gpt-4o-mini'
+
+async function callOpenAIForPlan(systemPrompt, userPrompt) {
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_KEY}` },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      max_tokens: 800, temperature: 0.5,
+    }),
+  })
+  if (!res.ok) throw new Error(`API error ${res.status}`)
+  return (await res.json()).choices[0].message.content.trim()
+}
+
+function parsePlanFromAI(raw, sections) {
+  try {
+    const jsonMatch = raw.match(/\{[\s\S]*\}/)
+    if (jsonMatch) return JSON.parse(jsonMatch[0])
+  } catch {}
+  // Fallback: build plan from sections with low mastery
+  return {
+    summary: raw.slice(0, 200),
+    tasks: sections.slice(0, 8).map((s, i) => ({
+      id: `task_${s.id}`, label: `Изучить раздел ${s.label}`,
+      type: 'complete_levels', sectionId: s.id, targetCount: 3,
+      priority: i < 3 ? 'high' : 'medium',
+    })),
+  }
+}
+
+const PLAN_UPDATE_INTERVAL_DAYS = 3
 
 // ─── Count-up hook ────────────────────────────────────────────────────────────
 function useCountUp(target, duration = 900) {
@@ -262,7 +300,7 @@ const PRIORITY_COLORS = {
 
 // ─── Components ───────────────────────────────────────────────────────────────
 
-function PreparationPlanCard({ plan, completedLevels, navigate, diagnosticData, accent }) {
+function PreparationPlanCard({ plan, completedLevels, navigate, diagnosticData, accent, updatePlan, progress, sections, exam }) {
   // If diagnostic done but no plan yet → show CTA
   if (!plan) {
     if (!diagnosticData.done) return null
@@ -302,6 +340,58 @@ function PreparationPlanCard({ plan, completedLevels, navigate, diagnosticData, 
         </div>
       </div>
     )
+  }
+
+  const [updating, setUpdating] = useState(false)
+  const [updateError, setUpdateError] = useState(null)
+
+  const lastUpdated = plan?.updatedAt ?? plan?.createdAt ?? 0
+  const daysSinceUpdate = Math.floor((Date.now() - lastUpdated) / 86400000)
+  const canUpdate = daysSinceUpdate >= PLAN_UPDATE_INTERVAL_DAYS
+  const daysUntilUpdate = PLAN_UPDATE_INTERVAL_DAYS - daysSinceUpdate
+
+  const handleUpdatePlan = async () => {
+    if (!canUpdate || updating || !updatePlan) return
+    setUpdating(true); setUpdateError(null)
+    try {
+      const examName = exam === 'oge' ? 'ОГЭ' : 'ЕГЭ'
+      const completedCount = Object.values(completedLevels ?? {}).reduce((s, arr) => s + arr.length, 0)
+      const weakList = (diagnosticData.weakTopics ?? []).map(t => t.topic).join(', ') || 'нет данных'
+      const strongList = (diagnosticData.strongTopics ?? []).map(t => t.topic).join(', ') || 'нет данных'
+      const sectionProgress = (sections ?? []).map(s => {
+        const done = completedLevels[s.id]?.length ?? 0
+        return `${s.label}: ${done}/6 уровней`
+      }).join('; ')
+
+      const systemPrompt = `Ты эксперт по подготовке к ${examName}. Составляй персональные планы подготовки для школьников. Отвечай ТОЛЬКО валидным JSON.`
+      const userPrompt = `Обнови план подготовки к ${examName} на основе актуального прогресса.
+
+Прогресс по разделам: ${sectionProgress}
+Пройдено уровней всего: ${completedCount}
+Слабые темы: ${weakList}
+Сильные темы: ${strongList}
+
+Верни JSON в точно таком формате:
+{
+  "summary": "Краткий анализ прогресса и рекомендация (2–3 предложения)",
+  "tasks": [
+    { "id": "t1", "label": "Описание задачи", "type": "complete_levels", "sectionId": "id_раздела", "targetCount": 3, "priority": "high" },
+    ...
+  ]
+}
+
+Типы задач: "complete_levels" (пройти N уровней раздела) или "study_theory" (изучить теорию раздела).
+Приоритеты: "high", "medium", "low".
+Создай 6–10 актуальных задач, фокусируясь на слабых темах и непройденных разделах.`
+
+      const raw = await callOpenAIForPlan(systemPrompt, userPrompt)
+      const newPlan = parsePlanFromAI(raw, sections ?? [])
+      updatePlan(newPlan)
+    } catch (e) {
+      setUpdateError('Не удалось обновить план — проверь интернет')
+    } finally {
+      setUpdating(false)
+    }
   }
 
   const tasks = plan.tasks ?? []
@@ -426,18 +516,46 @@ function PreparationPlanCard({ plan, completedLevels, navigate, diagnosticData, 
         })}
       </div>
 
-      {/* Обновить план */}
-      <button
-        onClick={() => navigate('/diagnostic')}
-        className="tap-scale"
-        style={{
-          marginTop: '12px', width: '100%', padding: '10px', borderRadius: '12px',
-          background: 'var(--bg-card)', border: '1px solid var(--border)',
-          color: 'var(--text-2)', fontSize: '12px', fontWeight: '600', cursor: 'pointer',
-        }}
-      >
-        {allDone ? '🎉 Пройти диагностику снова' : '↻ Обновить план'}
-      </button>
+      {/* Обновить план / диагностика */}
+      <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {updateError && (
+          <div style={{ fontSize: '11px', color: '#f87171', textAlign: 'center', padding: '6px' }}>
+            ⚠️ {updateError}
+          </div>
+        )}
+        <button
+          onClick={handleUpdatePlan}
+          disabled={!canUpdate || updating}
+          className={canUpdate && !updating ? 'tap-scale' : ''}
+          style={{
+            width: '100%', padding: '11px', borderRadius: '12px',
+            background: canUpdate && !updating
+              ? 'linear-gradient(135deg, #7c3aed, #6366f1)'
+              : 'var(--bg-card)',
+            border: canUpdate && !updating ? 'none' : '1px solid var(--border)',
+            color: canUpdate && !updating ? '#fff' : 'var(--text-3)',
+            fontSize: '13px', fontWeight: '700', cursor: canUpdate && !updating ? 'pointer' : 'default',
+            opacity: updating ? 0.7 : 1,
+            transition: 'all 0.2s',
+          }}
+        >
+          {updating
+            ? '⏳ Анализирую прогресс...'
+            : canUpdate
+              ? '🤖 Обновить план с AI'
+              : `↻ Обновить через ${daysUntilUpdate} ${daysUntilUpdate === 1 ? 'день' : daysUntilUpdate < 5 ? 'дня' : 'дней'}`
+          }
+        </button>
+        {allDone && (
+          <button onClick={() => navigate('/diagnostic')} className="tap-scale" style={{
+            width: '100%', padding: '10px', borderRadius: '12px',
+            background: 'var(--bg-card)', border: '1px solid var(--border)',
+            color: 'var(--text-2)', fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+          }}>
+            🎉 Пройти диагностику снова
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -907,7 +1025,7 @@ function OgeGradeCard({ ogeData, subject, accent }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Progress() {
   const navigate = useNavigate()
-  const { progress, getTotalProgress, getSectionProgress, diagnosticData, planData, ogeData } = useProgress()
+  const { progress, getTotalProgress, getSectionProgress, diagnosticData, planData, ogeData, daysLeft, updatePlan } = useProgress()
 
   if (!progress) { navigate('/onboarding'); return null }
 
@@ -950,12 +1068,51 @@ export default function Progress() {
           </div>
         </div>
 
+        {/* Exam countdown banner */}
+        {daysLeft !== null && (() => {
+          const examLabel = progress.exam === 'oge' ? 'ОГЭ' : 'ЕГЭ'
+          const dayWord = daysLeft % 10 === 1 && daysLeft % 100 !== 11 ? 'день'
+            : [2,3,4].includes(daysLeft % 10) && ![12,13,14].includes(daysLeft % 100) ? 'дня' : 'дней'
+          let color = '#3b82f6', bg = 'rgba(59,130,246,0.08)', border = 'rgba(59,130,246,0.2)'
+          if (daysLeft <= 14) { color = '#ef4444'; bg = 'rgba(239,68,68,0.08)'; border = 'rgba(239,68,68,0.2)' }
+          else if (daysLeft <= 30) { color = '#f97316'; bg = 'rgba(249,115,22,0.08)'; border = 'rgba(249,115,22,0.2)' }
+          else if (daysLeft <= 60) { color = '#f59e0b'; bg = 'rgba(245,158,11,0.08)'; border = 'rgba(245,158,11,0.2)' }
+          return (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '12px 16px', borderRadius: 16, marginBottom: 12,
+              background: bg, border: `1px solid ${border}`,
+            }}>
+              <span style={{ fontSize: 20 }}>📅</span>
+              <div style={{ flex: 1 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>До {examLabel}: </span>
+                <span style={{ fontSize: 13, fontWeight: 800, color }}>{daysLeft} {dayWord}</span>
+              </div>
+              {daysLeft <= 30 && (
+                <span style={{ fontSize: 11, fontWeight: 600, color, padding: '3px 8px', borderRadius: 8, background: `${color}15`, border: `1px solid ${color}30` }}>
+                  {daysLeft <= 14 ? 'Финальный рывок!' : 'Интенсив!'}
+                </span>
+              )}
+            </div>
+          )
+        })()}
+
         {isOge
           ? <OgeGradeCard ogeData={ogeData} subject={progress.subject} accent={accent} />
           : <EgeScoreCard prediction={prediction} subject={progress.subject} diagnosticData={diagnosticData} accent={accent} />
         }
         <StatsRow streak={progress.streak} totalXp={progress.totalXp} totalCompleted={totalCompleted} totalLevels={totalLevels} accent={accent} />
-        <PreparationPlanCard plan={planData} completedLevels={progress.completedLevels} navigate={navigate} diagnosticData={diagnosticData} accent={accent} />
+        <PreparationPlanCard
+          plan={planData}
+          completedLevels={progress.completedLevels}
+          navigate={navigate}
+          diagnosticData={diagnosticData}
+          accent={accent}
+          updatePlan={updatePlan}
+          progress={progress}
+          sections={sections}
+          exam={progress.exam ?? 'ege'}
+        />
         {!isOge && <OpportunitiesCard opportunities={prediction.opportunities} subject={progress.subject} prediction={prediction} accent={accent} />}
         <WeakTopicsCard diagnosticData={diagnosticData} weakSections={prediction.weakSections} accent={accent} navigate={navigate} subject={progress.subject} />
         <WeekActivity days={days} lastActiveDate={progress.lastActiveDate} />

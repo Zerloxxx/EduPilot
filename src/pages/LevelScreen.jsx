@@ -7,6 +7,16 @@ import EnergyGate from '../components/EnergyGate'
 const DRAFT_PREFIX = 'edupilot_level_draft_v1'
 const letters = ['А', 'Б', 'В', 'Г']
 
+// Normalize answer for input tasks (same as ExamSim)
+function normalizeAnswer(s) {
+  return String(s ?? '').trim()
+    .replace(/\s+/g, '')
+    .replace(',', '.')
+    .replace(/^−/, '-')
+    .replace(/^–/, '-')
+    .toLowerCase()
+}
+
 function draftKey(sectionId, levelIndex) {
   return `${DRAFT_PREFIX}_${sectionId}_${levelIndex}`
 }
@@ -224,7 +234,7 @@ function EntryScreen({ section, meta, levelData, isTheory, hasTasks, hasDraft, o
   )
 }
 
-function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onConsumeEnergy, energyData, onScheduleReview, exam }) {
+function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onConsumeEnergy, energyData, onScheduleReview, exam, sectionId, completeLevelWithBonus, nickname, avatar }) {
   const navigate = useNavigate()
   const meta = LEVEL_META[levelIndex]
   const color = section.color ?? meta.color ?? '#3b82f6'
@@ -252,13 +262,21 @@ function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onCons
   const isLast = state.currentQueueIndex >= state.queue.length - 1
   const completedCount = state.results.filter(r => r.correct).length
   const retryNumber = state.retryCounts[task?.id] ?? 0
-  const visibleOptions = retryNumber > 0 && task.retryOptions ? task.retryOptions : task.options
+  const isInputTask = task?.type === 'input'
+  const visibleOptions = isInputTask ? [] : (retryNumber > 0 && task.retryOptions ? task.retryOptions : task.options)
   const visibleCorrect = useMemo(() => {
+    if (isInputTask) return -1
     const correctText = task.options[task.correct]
     return visibleOptions.findIndex(opt => opt === correctText)
-  }, [task, visibleOptions])
-  const isCorrect = selected === visibleCorrect
+  }, [task, visibleOptions, isInputTask])
+  const isCorrect = isInputTask
+    ? (state.submitted && state.results.find(r => r.taskId === task.id)?.correct === true)
+    : selected === visibleCorrect
   const submittedWrong = state.submitted && !isCorrect
+
+  // For input tasks: track text input
+  const [inputValue, setInputValue] = useState('')
+  useEffect(() => { setInputValue('') }, [state.currentQueueIndex])
 
   const persist = updater => setState(prev => {
     const next = typeof updater === 'function' ? updater(prev) : updater
@@ -267,10 +285,31 @@ function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onCons
   })
 
   const [showEnergyGate, setShowEnergyGate] = useState(false)
+  const [hadMistakes, setHadMistakes] = useState(false)
+  const [victoryData, setVictoryData] = useState(null)
 
   const submit = () => {
+    if (isInputTask) {
+      if (!inputValue.trim()) return
+      const correct = normalizeAnswer(inputValue) === normalizeAnswer(task.correctAnswer)
+      if (!correct) setHadMistakes(true)
+      persist(prev => ({
+        ...prev,
+        submitted: true,
+        results: [...prev.results, { taskId: task.id, correct, selectedText: inputValue }],
+      }))
+      onConsumeEnergy()
+      if (!correct) {
+        onScheduleReview(task.id, section.id, levelIndex, section.label, section.taskNumber, {
+          id: task.id, text: task.text, options: [task.correctAnswer], correct: 0,
+          explanation: task.explanation, retryOptions: null,
+        })
+      }
+      return
+    }
     if (selected === null) return
     const correct = selected === visibleCorrect
+    if (!correct) setHadMistakes(true)
     persist(prev => ({
       ...prev,
       submitted: true,
@@ -302,7 +341,8 @@ function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onCons
       const wrongIds = state.results.filter(r => !r.correct).map(r => r.taskId)
       if (wrongIds.length === 0) {
         clearDraft(section.id, levelIndex)
-        onComplete()
+        const reward = completeLevelWithBonus(sectionId, levelIndex, !hadMistakes)
+        setVictoryData(reward)
         return
       }
 
@@ -342,10 +382,24 @@ function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onCons
       threadId: section.id,
       threadTitle: `№${section.taskNumber} · ${section.label}`,
       threadEmoji: section.emoji ?? '📝',
+      returnPath: `/level/${section.id}/${levelIndex}`,
     }
     localStorage.setItem('edupilot_chat_context', JSON.stringify(payload))
     writeDraft(section.id, levelIndex, state)
     navigate('/chat')
+  }
+
+  if (victoryData) {
+    return (
+      <VictoryScreen
+        section={section}
+        levelIndex={levelIndex}
+        reward={victoryData}
+        nickname={nickname}
+        avatar={avatar}
+        onContinue={onComplete}
+      />
+    )
   }
 
   return (
@@ -390,6 +444,55 @@ function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onCons
           <div style={{ fontSize: '15px', lineHeight: 1.65, color: 'var(--text-1)', fontWeight: '600' }}>{task.text}</div>
         </div>
 
+        {isInputTask ? (
+          <div style={{ marginBottom: '14px' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '4px 10px', borderRadius: '9px', marginBottom: '12px',
+              background: `rgba(${hexToRgb(color)},0.12)`, width: 'fit-content',
+              fontSize: '11px', fontWeight: '800', color,
+            }}>
+              ✏️ Введи числовой ответ
+            </div>
+            <div style={{
+              display: 'flex', gap: '10px', alignItems: 'center',
+              padding: '12px 14px', borderRadius: '16px',
+              background: 'var(--bg-card)',
+              border: state.submitted
+                ? (isCorrect ? '1.5px solid rgba(16,185,129,0.5)' : '1.5px solid rgba(239,68,68,0.45)')
+                : `1.5px solid rgba(${hexToRgb(color)},0.35)`,
+            }}>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={inputValue}
+                onChange={e => !state.submitted && setInputValue(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && !state.submitted && submit()}
+                placeholder="Введи ответ..."
+                disabled={state.submitted}
+                style={{
+                  flex: 1, background: 'none', border: 'none', outline: 'none',
+                  fontSize: '18px', fontWeight: '700', color: 'var(--text-1)',
+                  fontFamily: 'inherit',
+                }}
+              />
+              {state.submitted && (
+                <span style={{ fontSize: '20px', flexShrink: 0 }}>
+                  {isCorrect ? '✅' : '❌'}
+                </span>
+              )}
+            </div>
+            {state.submitted && !isCorrect && (
+              <div style={{
+                marginTop: '10px', padding: '10px 14px', borderRadius: '12px',
+                background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)',
+                fontSize: '13px', color: '#34d399',
+              }}>
+                Правильный ответ: <strong>{task.correctAnswer}</strong>
+              </div>
+            )}
+          </div>
+        ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', marginBottom: '14px' }}>
           {visibleOptions.map((option, index) => {
             const active = selected === index
@@ -424,6 +527,7 @@ function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onCons
             )
           })}
         </div>
+        )}
 
         {state.submitted && isCorrect && (
           <div style={{
@@ -474,7 +578,11 @@ function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onCons
         )}
 
         {!state.submitted ? (
-          <button className="btn-primary" onClick={submit} disabled={selected === null} style={{ opacity: selected === null ? 0.35 : 1 }}>
+          <button
+            className="btn-primary" onClick={submit}
+            disabled={isInputTask ? !inputValue.trim() : selected === null}
+            style={{ opacity: (isInputTask ? !inputValue.trim() : selected === null) ? 0.35 : 1 }}
+          >
             Проверить
           </button>
         ) : (
@@ -499,6 +607,119 @@ function PracticeScreen({ section, levelIndex, tasks, onComplete, onBack, onCons
   )
 }
 
+// ─── Victory Screen ──────────────────────────────────────────────────────────
+function VictoryScreen({ section, levelIndex, reward, nickname, avatar, onContinue }) {
+  const { xp, streakGain, newStreak, energyBonus } = reward
+  const color = section.color ?? '#7c3aed'
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200,
+      background: 'var(--bg)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'center', padding: '24px',
+    }}>
+      {/* Confetti circles */}
+      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+        {['#f59e0b','#10b981','#3b82f6','#a855f7','#f43f5e','#06b6d4'].map((c, i) => (
+          <div key={i} style={{
+            position: 'absolute',
+            width: `${12 + (i % 3) * 8}px`, height: `${12 + (i % 3) * 8}px`,
+            borderRadius: '50%', background: c, opacity: 0.25,
+            top: `${10 + i * 14}%`, left: `${8 + i * 15}%`,
+            animation: `confettiBounce ${1.2 + i * 0.15}s ease-in-out infinite alternate`,
+          }} />
+        ))}
+      </div>
+
+      {/* Avatar */}
+      <div style={{
+        width: '90px', height: '90px', borderRadius: '28px',
+        background: `linear-gradient(135deg, ${color}, #3b82f6)`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '42px', marginBottom: '20px',
+        boxShadow: `0 12px 40px ${color}55`,
+      }}>{avatar ?? '🎓'}</div>
+
+      <div style={{ fontSize: '26px', fontWeight: '900', color: 'var(--text-1)', marginBottom: '6px', textAlign: 'center' }}>
+        Уровень {levelIndex} пройден!
+      </div>
+      <div style={{ fontSize: '14px', color: 'var(--text-2)', marginBottom: '28px', textAlign: 'center' }}>
+        {section.label}
+      </div>
+
+      {/* Reward cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '320px', marginBottom: '28px' }}>
+        {/* XP */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '14px',
+          padding: '14px 18px', borderRadius: '18px',
+          background: 'rgba(250,204,21,0.1)', border: '1px solid rgba(250,204,21,0.3)',
+        }}>
+          <div style={{
+            width: '44px', height: '44px', borderRadius: '14px',
+            background: 'rgba(250,204,21,0.2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px',
+          }}>⭐</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-3)', fontWeight: '600' }}>ОПЫТ</div>
+            <div style={{ fontSize: '20px', fontWeight: '900', color: '#fbbf24' }}>+{xp} XP</div>
+          </div>
+        </div>
+
+        {/* Streak */}
+        {streakGain > 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '14px',
+            padding: '14px 18px', borderRadius: '18px',
+            background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)',
+          }}>
+            <div style={{
+              width: '44px', height: '44px', borderRadius: '14px',
+              background: 'rgba(249,115,22,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px',
+            }}>🔥</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-3)', fontWeight: '600' }}>СЕРИЯ ДНЕЙ</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#fb923c' }}>{newStreak} {newStreak === 1 ? 'день' : newStreak < 5 ? 'дня' : 'дней'}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Energy bonus */}
+        {energyBonus > 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '14px',
+            padding: '14px 18px', borderRadius: '18px',
+            background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
+          }}>
+            <div style={{
+              width: '44px', height: '44px', borderRadius: '14px',
+              background: 'rgba(16,185,129,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px',
+            }}>⚡</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-3)', fontWeight: '600' }}>БОНУС БЕЗ ОШИБОК</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#34d399' }}>+{energyBonus} энергии</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <button className="btn-primary" onClick={onContinue} style={{ width: '100%', maxWidth: '320px', fontSize: '16px', padding: '16px' }}>
+        Продолжить →
+      </button>
+
+      <style>{`
+        @keyframes confettiBounce {
+          from { transform: translateY(0) rotate(0deg); }
+          to { transform: translateY(-18px) rotate(15deg); }
+        }
+      `}</style>
+    </div>
+  )
+}
+
 function InfoRow({ icon, text }) {
   return (
     <div style={{
@@ -517,8 +738,11 @@ export default function LevelScreen() {
   const { sectionId, levelIndex: levelIndexStr } = useParams()
   const levelIndex = parseInt(levelIndexStr, 10)
   const navigate = useNavigate()
-  const { progress, completeLevel, energyData, consumeEnergy, refillEnergy, scheduleReview } = useProgress()
-  const [mode, setMode] = useState('entry')
+  const { progress, completeLevel, completeLevelWithBonus, energyData, consumeEnergy, refillEnergy, scheduleReview } = useProgress()
+  // If a draft exists, resume directly into practice (skips entry screen)
+  const [mode, setMode] = useState(() =>
+    readDraft(sectionId, levelIndex) ? 'practice' : 'entry'
+  )
 
   if (!progress) {
     navigate('/onboarding')
@@ -601,6 +825,10 @@ export default function LevelScreen() {
         energyData={energyData}
         onScheduleReview={scheduleReview}
         exam={progress.exam ?? 'ege'}
+        sectionId={sectionId}
+        completeLevelWithBonus={completeLevelWithBonus}
+        nickname={progress.nickname ?? 'Ученик'}
+        avatar={progress.avatar ?? '🎓'}
       />
     )
   }

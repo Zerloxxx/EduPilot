@@ -122,16 +122,24 @@ export default function PhoneFrame({ children, bottomNav }) {
     return () => window.removeEventListener('resize', compute)
   }, [])
 
-  // ─── Mobile: full-screen, no frame ───────────────────────────────────────
+  // ─── Mobile: full-screen native feel, no fake frame ─────────────────────
   if (isMobile) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--bg)' }}>
-        <StatusBar />
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100dvh',
+        background: 'var(--bg)',
+        // Respect device notch / Dynamic Island / home indicator
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
+      }}>
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, position: 'relative' }}>
           {children}
         </div>
         {bottomNav}
-        <HomeIndicator />
       </div>
     )
   }

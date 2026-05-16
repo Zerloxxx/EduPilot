@@ -1,19 +1,25 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProgress } from '../hooks/useProgress'
 import { DIAGNOSTIC, OGE_DIAGNOSTIC, getMockAIRecommendation } from '../data/diagnosticData'
 import { SUBJECTS, getSections } from '../data/curriculum'
+import { normalizeAnswer } from '../data/examSimData'
 
 const OPENAI_KEY = import.meta.env.VITE_OPENAI_KEY
 
-async function generatePlan(subject, subjectLabel, score, weakTopics, strongTopics, sections) {
+async function generatePlan(subject, subjectLabel, score, weakTopics, strongTopics, sections, daysLeft) {
   const weakList  = weakTopics.length  ? weakTopics.map(t  => `- ${t.topic} (${t.sectionId})`).join('\n')  : '—'
   const strongList = strongTopics.length ? strongTopics.map(t => `- ${t.topic} (${t.sectionId})`).join('\n') : '—'
   const sectionList = sections.map(s => `${s.id}: №${s.taskNumber} ${s.label}`).join('\n')
+  const examType = subject === 'math' || subject === 'russian' || subject === 'cs' ? 'ЕГЭ' : 'ОГЭ'
+  const timeCtx = daysLeft !== null
+    ? `До экзамена: ${daysLeft} дней. ${daysLeft <= 30 ? 'Мало времени — фокус только на слабых темах, не распыляйся.' : daysLeft <= 60 ? 'Умеренно времени — приоритет слабым темам, но проработай и ключевые сильные.' : 'Времени достаточно — можно охватить все темы системно.'}`
+    : 'Дата экзамена не указана.'
 
-  const prompt = `Составь персональный план подготовки к ЕГЭ по предмету: ${subjectLabel}.
+  const prompt = `Составь персональный план подготовки к ${examType} по предмету: ${subjectLabel}.
 
 Результат входного теста: ${score}%
+${timeCtx}
 Слабые темы:\n${weakList}
 Сильные темы:\n${strongList}
 
@@ -22,7 +28,7 @@ ${sectionList}
 
 Верни JSON строго в таком формате (без markdown, только JSON):
 {
-  "summary": "1-2 предложения об уровне ученика и главном приоритете",
+  "summary": "1-2 предложения об уровне ученика, сколько дней до экзамена и главном приоритете",
   "tasks": [
     { "id": "t1", "sectionId": "...", "type": "study_theory", "label": "Изучить теорию: №X ...", "priority": "high" },
     { "id": "t2", "sectionId": "...", "type": "complete_levels", "targetCount": 4, "label": "Пройти практику уровни 1–4: №X ...", "priority": "high" }
@@ -32,7 +38,8 @@ ${sectionList}
 Правила:
 - type: только "study_theory" (изучить теорию раздела) или "complete_levels" (пройти уровни практики)
 - targetCount для complete_levels: число от 2 до 6
-- Составь 5–8 задач, слабые темы в приоритете
+- Если дней мало (≤30): составь 3–5 задач только на критичные слабые темы
+- Если дней достаточно: составь 5–8 задач, слабые темы в приоритете
 - priority: "high", "medium" или "low"
 - sectionId строго из списка выше`
 
@@ -50,6 +57,16 @@ ${sectionList}
   if (!res.ok) throw new Error(`API ${res.status}`)
   const data = await res.json()
   return JSON.parse(data.choices[0].message.content)
+}
+
+// Returns true when the expected answer is a pure number (integer, decimal, fraction)
+function isNumericAnswer(ans) {
+  return /^-?\d+([.,]\d+)?(\/\d+)?$/.test((ans ?? '').trim())
+}
+function filterInput(value, numeric) {
+  return numeric
+    ? value.replace(/[^0-9.,\-\/]/g, '')
+    : value.replace(/[0-9]/g, '')
 }
 
 const SUBJECT_ACCENT = {
@@ -121,27 +138,37 @@ function IntroScreen({ subject, subjectInfo, accent, onStart, onSkip }) {
   )
 }
 
-// ─── Question ─────────────────────────────────────────────────────────────────
+// ─── Question (text-input version) ───────────────────────────────────────────
 function QuizScreen({ questions, accent, onFinish }) {
   const [current, setCurrent] = useState(0)
-  const [selected, setSelected] = useState(null)
-  const [answers, setAnswers] = useState([]) // { questionIndex, selectedOption, isCorrect }
+  const [inputValue, setInputValue] = useState('')
+  const [checked, setChecked] = useState(false)
+  const [answers, setAnswers] = useState([])
+  const inputRef = useRef(null)
 
   const q = questions[current]
+  const numeric = isNumericAnswer(q.correctAnswer)
   const progress = (current / questions.length) * 100
-  const isAnswered = selected !== null
+  const isCorrect = checked && normalizeAnswer(inputValue) === normalizeAnswer(q.correctAnswer)
+  const isWrong = checked && !isCorrect
 
-  const handleSelect = (optionIndex) => {
-    if (isAnswered) return
-    setSelected(optionIndex)
+  const handleCheck = () => {
+    if (!inputValue.trim()) return
+    setChecked(true)
   }
 
   const handleNext = () => {
-    const newAnswers = [...answers, { question: q, selectedOption: selected, isCorrect: selected === q.correct }]
+    const newAnswers = [...answers, {
+      question: q,
+      userAnswer: inputValue,
+      isCorrect: normalizeAnswer(inputValue) === normalizeAnswer(q.correctAnswer),
+    }]
     if (current + 1 < questions.length) {
       setAnswers(newAnswers)
       setCurrent(current + 1)
-      setSelected(null)
+      setInputValue('')
+      setChecked(false)
+      setTimeout(() => inputRef.current?.focus(), 80)
     } else {
       onFinish(newAnswers)
     }
@@ -183,69 +210,68 @@ function QuizScreen({ questions, accent, onFinish }) {
           </p>
         </div>
 
-        {/* Options */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {q.options.map((opt, i) => {
-            let bg = 'var(--bg-card)'
-            let border = '1px solid var(--border)'
-            let color = 'var(--text-1)'
+        {/* Text input */}
+        <input
+          ref={inputRef}
+          type="text"
+          inputMode={numeric ? 'decimal' : 'text'}
+          value={inputValue}
+          onChange={e => { if (!checked) setInputValue(filterInput(e.target.value, numeric)) }}
+          onKeyDown={e => { if (e.key === 'Enter' && !checked && inputValue.trim()) handleCheck() }}
+          placeholder={numeric ? 'Введи число…' : 'Введи ответ…'}
+          disabled={checked}
+          autoFocus
+          style={{
+            width: '100%', padding: '14px 16px', borderRadius: 14,
+            border: `1.5px solid ${checked ? (isCorrect ? '#10b981' : '#ef4444') : `${accent}55`}`,
+            background: checked
+              ? (isCorrect ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)')
+              : 'var(--bg-card)',
+            color: 'var(--text-1)', fontSize: 16, fontWeight: 700,
+            outline: 'none', boxSizing: 'border-box',
+            transition: 'border-color 0.18s, background 0.18s',
+          }}
+        />
 
-            if (isAnswered) {
-              if (i === q.correct) {
-                bg = 'rgba(16,185,129,0.12)'; border = '1.5px solid rgba(16,185,129,0.4)'; color = '#34d399'
-              } else if (i === selected && i !== q.correct) {
-                bg = 'rgba(239,68,68,0.1)'; border = '1.5px solid rgba(239,68,68,0.3)'; color = '#f87171'
-              }
-            } else if (i === selected) {
-              bg = `${accent}22`; border = `1.5px solid ${accent}66`; color = '#f0f0ff'
-            }
-
-            return (
-              <button key={i} onClick={() => handleSelect(i)}
-                className={isAnswered ? '' : 'tap-scale'}
-                style={{
-                  width: '100%', padding: '14px 16px', borderRadius: '14px', textAlign: 'left',
-                  background: bg, border, color, fontSize: '14px', lineHeight: '1.4',
-                  cursor: isAnswered ? 'default' : 'pointer',
-                  transition: 'all 0.18s',
-                  display: 'flex', alignItems: 'center', gap: '12px',
-                  animation: isAnswered && i === q.correct ? 'correctFlash 0.5s ease-in-out' : 'none',
-                }}>
-                <span style={{
-                  width: '26px', height: '26px', borderRadius: '8px', flexShrink: 0,
-                  background: isAnswered && i === q.correct
-                    ? 'rgba(16,185,129,0.2)'
-                    : isAnswered && i === selected && i !== q.correct
-                      ? 'rgba(239,68,68,0.15)'
-                      : i === selected
-                        ? `${accent}33`
-                        : 'var(--bg-card-2)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '11px', fontWeight: '700', color: 'inherit',
-                }}>
-                  {isAnswered && i === q.correct ? '✓' : isAnswered && i === selected && i !== q.correct ? '✗' : String.fromCharCode(65 + i)}
-                </span>
-                {opt}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Brief explanation after answer */}
-        {isAnswered && selected !== q.correct && (
+        {/* Feedback */}
+        {checked && (
           <div style={{
             marginTop: '12px', padding: '12px 14px', borderRadius: '12px',
-            background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.2)',
+            background: isCorrect ? 'rgba(16,185,129,0.1)' : 'rgba(124,58,237,0.1)',
+            border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.25)' : 'rgba(124,58,237,0.2)'}`,
           }}>
-            <p style={{ fontSize: '12px', color: '#c084fc', lineHeight: '1.5' }}>
-              💡 Правильный ответ: <strong>{q.options[q.correct]}</strong>
-            </p>
+            {isCorrect ? (
+              <p style={{ fontSize: '13px', color: '#34d399', fontWeight: 600 }}>✅ Верно!</p>
+            ) : (
+              <p style={{ fontSize: '13px', color: '#c084fc', lineHeight: '1.5' }}>
+                💡 Правильный ответ: <strong>{q.correctAnswer}</strong>
+              </p>
+            )}
           </div>
         )}
       </div>
 
-      {/* Next button */}
-      {isAnswered && (
+      {/* Action buttons */}
+      {!checked ? (
+        <button
+          onClick={handleCheck}
+          disabled={!inputValue.trim()}
+          className={inputValue.trim() ? 'tap-scale' : ''}
+          style={{
+            marginTop: '16px', width: '100%', padding: '15px', borderRadius: '16px',
+            border: inputValue.trim() ? 'none' : '1px solid var(--border)',
+            background: inputValue.trim()
+              ? `linear-gradient(135deg, ${accent}, ${accent}cc)`
+              : 'var(--bg-card)',
+            color: inputValue.trim() ? '#fff' : 'var(--text-3)',
+            fontSize: '15px', fontWeight: '700',
+            cursor: inputValue.trim() ? 'pointer' : 'default',
+            boxShadow: inputValue.trim() ? `0 6px 20px ${accent}44` : 'none',
+            transition: 'all 0.18s',
+          }}>
+          Проверить ответ
+        </button>
+      ) : (
         <button className="page-enter" onClick={handleNext} style={{
           marginTop: '16px', width: '100%', padding: '15px', borderRadius: '16px',
           border: 'none', background: `linear-gradient(135deg, ${accent}, ${accent}cc)`,
@@ -419,7 +445,7 @@ function ResultsScreen({ answers, accent, subject, onContinue, onMakePlan }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function DiagnosticTest() {
   const navigate = useNavigate()
-  const { progress, saveDiagnostic, savePlan } = useProgress()
+  const { progress, saveDiagnostic, savePlan, daysLeft } = useProgress()
   const [screen, setScreen] = useState(SCREEN.INTRO)
   const [answers, setAnswers] = useState([])
 
@@ -444,7 +470,7 @@ export default function DiagnosticTest() {
   const handleMakePlan = async (score, weak, strong) => {
     saveDiagnostic(score, weak, strong)
     const sections = getSections(subject, progress.exam)
-    const plan = await generatePlan(subject, subjectInfo?.label ?? subject, score, weak, strong, sections)
+    const plan = await generatePlan(subject, subjectInfo?.label ?? subject, score, weak, strong, sections, daysLeft)
     savePlan(plan)
     navigate('/progress')
   }

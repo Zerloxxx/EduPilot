@@ -11,6 +11,7 @@ import Progress from './pages/Progress'
 import Profile from './pages/Profile'
 import DiagnosticTest from './pages/DiagnosticTest'
 import ReviewScreen from './pages/ReviewScreen'
+import ExamSim from './pages/ExamSim'
 
 const PAGES_WITH_NAV = ['/home', '/chat', '/progress', '/profile']
 
@@ -36,6 +37,7 @@ function AppContent() {
         <Route path="/level/:sectionId/:levelIndex" element={<LevelScreenWrapper />} />
         <Route path="/diagnostic" element={<DiagnosticTest />} />
         <Route path="/review" element={<ReviewScreen />} />
+        <Route path="/exam-sim/:examKey" element={<ExamSim />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/profile" element={<Profile />} />

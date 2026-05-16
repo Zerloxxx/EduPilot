@@ -30,11 +30,13 @@ function getSubjectInitialData(subject, exam = 'ege') {
     energy: 30,
     energyDepletedAt: null,
     reviewQueue: [],
+    examDate: null,
+    examHistory: [],
   }
 }
 
 // ─── Full initial state (called from onboarding) ─────────────────────────────
-function getInitialState(exam, subject) {
+function getInitialState(exam, subject, examDate = null) {
   return {
     exam,
     currentSubject: subject,
@@ -44,7 +46,7 @@ function getInitialState(exam, subject) {
     nickname: 'Ученик',
     avatar: '🎓',
     subjects: {
-      [subject]: getSubjectInitialData(subject, exam),
+      [subject]: { ...getSubjectInitialData(subject, exam), examDate },
     },
   }
 }
@@ -68,8 +70,13 @@ function load() {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     const state = JSON.parse(raw)
-    // Миграция: старые данные без поля exam → по умолчанию 'ege'
     if (state && !state.exam) state.exam = 'ege'
+    // Миграция: глобальный examDate → поле предмета
+    if (state && state.examDate !== undefined) {
+      const subj = state.subjects?.[state.currentSubject]
+      if (subj && !subj.examDate) subj.examDate = state.examDate ?? null
+      delete state.examDate
+    }
     return state
   } catch {
     return null
@@ -99,8 +106,8 @@ export function useProgress() {
   }, [])
 
   // ── Init (onboarding — full reset) ──────────────────────────────────────
-  const init = useCallback((exam, subject) => {
-    const initial = getInitialState(exam, subject)
+  const init = useCallback((exam, subject, examDate = null) => {
+    const initial = getInitialState(exam, subject, examDate)
     save(initial)
     stateRef.current = initial
     setReactState(initial)
@@ -196,6 +203,69 @@ export function useProgress() {
     })
   }, [update])
 
+  // ── Complete level + award XP/streak/energy (victory screen) ───────────
+  const completeLevelWithBonus = useCallback((sectionId, levelIndex, hadNoMistakes) => {
+    const prev = stateRef.current
+    if (!prev) return { xp: 0, streakGain: 0, newStreak: 0, energyBonus: 0 }
+
+    const today = getTodayStr()
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayStr = yesterday.toISOString().split('T')[0]
+    const isNewDay = prev.lastActiveDate !== today
+    const streakWouldContinue = prev.lastActiveDate === yesterdayStr
+    const newStreak = isNewDay ? (streakWouldContinue ? prev.streak + 1 : 1) : prev.streak
+    const streakGain = newStreak - prev.streak
+    const xp = xpForLevel(levelIndex)
+    const MAX_ENERGY = 30
+    const energyBonus = hadNoMistakes ? Math.ceil(MAX_ENERGY * 0.5) : 0
+
+    update(prev => {
+      if (!prev) return prev
+      const subject = prev.currentSubject
+      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject, prev.exam ?? 'ege')
+      const sections = getSections(subject, prev.exam)
+      const sectionIdx = sections.findIndex(s => s.id === sectionId)
+      const section = sections[sectionIdx]
+      const totalLevels = section?.levels?.length ?? 6
+
+      const completedInSection = [...(subjectData.completedLevels[sectionId] ?? [])]
+      if (!completedInSection.includes(levelIndex)) completedInSection.push(levelIndex)
+
+      const unlockedInSection = [...(subjectData.unlockedLevels[sectionId] ?? [])]
+      const nextLevel = levelIndex + 1
+      if (nextLevel < totalLevels && !unlockedInSection.includes(nextLevel)) unlockedInSection.push(nextLevel)
+
+      let newUnlocked = { ...subjectData.unlockedLevels, [sectionId]: unlockedInSection }
+      if (nextLevel >= totalLevels && sectionIdx + 1 < sections.length) {
+        const nextSectionId = sections[sectionIdx + 1].id
+        const nextSectionUnlocked = subjectData.unlockedLevels[nextSectionId] ?? []
+        if (!nextSectionUnlocked.includes(0)) newUnlocked[nextSectionId] = [...nextSectionUnlocked, 0]
+      }
+
+      const currentEnergy = subjectData.energy ?? 0
+      const newEnergy = Math.min(MAX_ENERGY, currentEnergy + energyBonus)
+
+      return {
+        ...prev,
+        streak: newStreak,
+        lastActiveDate: today,
+        totalXp: prev.totalXp + xp,
+        subjects: {
+          ...prev.subjects,
+          [subject]: {
+            ...subjectData,
+            completedLevels: { ...subjectData.completedLevels, [sectionId]: completedInSection },
+            unlockedLevels: newUnlocked,
+            energy: newEnergy,
+            energyDepletedAt: newEnergy > 0 ? null : subjectData.energyDepletedAt,
+          },
+        },
+      }
+    })
+
+    return { xp, streakGain, newStreak, energyBonus }
+  }, [update])
+
   // ── Mark task as solved ──────────────────────────────────────────────────
   const solveTask = useCallback((taskId) => {
     update(prev => {
@@ -250,7 +320,30 @@ export function useProgress() {
         ...prev,
         subjects: {
           ...prev.subjects,
-          [subject]: { ...subjectData, preparationPlan: { ...plan, createdAt: Date.now() } },
+          [subject]: { ...subjectData, preparationPlan: { ...plan, createdAt: Date.now(), updatedAt: Date.now() } },
+        },
+      }
+    })
+  }, [update])
+
+  // ── Update plan (AI re-analysis) — throttled to once per 3 days ─────────
+  const updatePlan = useCallback((plan) => {
+    update(prev => {
+      if (!prev) return prev
+      const subject = prev.currentSubject
+      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject, prev.exam ?? 'ege')
+      return {
+        ...prev,
+        subjects: {
+          ...prev.subjects,
+          [subject]: {
+            ...subjectData,
+            preparationPlan: {
+              ...plan,
+              createdAt: subjectData.preparationPlan?.createdAt ?? Date.now(),
+              updatedAt: Date.now(),
+            },
+          },
         },
       }
     })
@@ -375,6 +468,36 @@ export function useProgress() {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Set / update exam date for current subject ───────────────────────────
+  const setExamDate = useCallback((dateStr) => {
+    update(prev => {
+      if (!prev) return prev
+      const subject = prev.currentSubject
+      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject, prev.exam ?? 'ege')
+      return {
+        ...prev,
+        subjects: { ...prev.subjects, [subject]: { ...subjectData, examDate: dateStr } },
+      }
+    })
+  }, [update])
+
+  // ── Save exam simulation result ──────────────────────────────────────────
+  const saveExamResult = useCallback((examKey, result) => {
+    update(prev => {
+      if (!prev) return prev
+      const subject = prev.currentSubject
+      const subjectData = prev.subjects[subject] ?? getSubjectInitialData(subject, prev.exam ?? 'ege')
+      const history = subjectData.examHistory ?? []
+      return {
+        ...prev,
+        subjects: {
+          ...prev.subjects,
+          [subject]: { ...subjectData, examHistory: [...history, { examKey, ...result }] },
+        },
+      }
+    })
+  }, [update])
+
   // ── Update profile (nickname + avatar) ──────────────────────────────────
   const updateProfile = useCallback((nickname, avatar) => {
     update(prev => {
@@ -471,6 +594,18 @@ export function useProgress() {
     return { earnedPoints, maxPoints, grade, nextGrade }
   })()
 
+  // ── Days left until exam (per current subject) ───────────────────────────
+  const currentExamDate = state?.subjects?.[state?.currentSubject]?.examDate ?? null
+  const daysLeft = (() => {
+    if (!currentExamDate) return null
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const examDay = new Date(currentExamDate)
+    examDay.setHours(0, 0, 0, 0)
+    const diff = Math.ceil((examDay - today) / (1000 * 60 * 60 * 24))
+    return diff >= 0 ? diff : null
+  })()
+
   // ── Global stats across all subjects ────────────────────────────────────
   const globalStats = (() => {
     if (!state) return { totalLevels: 0 }
@@ -507,9 +642,11 @@ export function useProgress() {
     init,
     switchSubject,
     completeLevel,
+    completeLevelWithBonus,
     solveTask,
     saveDiagnostic,
     savePlan,
+    updatePlan,
     reset,
     getSectionProgress,
     getTotalProgress,
@@ -523,12 +660,16 @@ export function useProgress() {
     completeReview,
     dueReviews,
     updateProfile,
+    setExamDate,
+    saveExamResult,
     globalStats,
     subjectsSummary,
     nickname: state?.nickname ?? 'Ученик',
     avatar: state?.avatar ?? '🎓',
     isInitialized: !!state,
     ogeData,
+    examDate: currentExamDate,
+    daysLeft,
   }
 }
 
